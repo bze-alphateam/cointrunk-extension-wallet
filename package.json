@@ -1,0 +1,17 @@
+{
+  "name": "cointrunk-extension-wallet",
+  "version": "0.0.0",
+  "private": true,
+  "description": "CoinTrunk — a Manifest V3 browser-extension wallet for the BeeZee (BZE) network.",
+  "type": "module",
+  "packageManager": "pnpm@11.6.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.3"
+  }
+}
