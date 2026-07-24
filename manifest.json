@@ -10,7 +10,7 @@
     "128": "icons/icon-128.png"
   },
   "background": {
-    "service_worker": "background/index.js",
+    "service_worker": "src/background/index.ts",
     "type": "module"
   },
   "action": {
