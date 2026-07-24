@@ -5,6 +5,7 @@
     "moduleResolution": "Bundler",
     "lib": ["ES2022", "DOM", "DOM.Iterable", "WebWorker"],
     "types": ["chrome"],
+    "jsx": "react-jsx",
 
     "strict": true,
     "noUnusedLocals": true,

@@ -7,9 +7,9 @@ wallet for the [BeeZee (BZE)](https://getbze.com/) network. Public brand:
 
 > **Status:** early scaffolding. This repo currently contains the project
 > skeleton (TypeScript + tooling), the Manifest V3 manifest with a background
-> service worker stub, and a Vite build that produces a loadable extension. It
-> is being built out ticket by ticket under Epic **BUS-1 — Project foundation &
-> tooling**.
+> service worker stub, a Vite build that produces a loadable extension, and a
+> minimal React popup. It is being built out ticket by ticket under Epic
+> **BUS-1 — Project foundation & tooling**.
 
 ## Project structure
 
@@ -18,14 +18,17 @@ manifest.json        # MV3 manifest (source) — references source entry points
 vite.config.ts       # Vite + @crxjs/vite-plugin build config
 public/icons/        # placeholder toolbar/store icons (16/32/48/128)
 src/background/       # background service worker source (index.ts)
+src/popup/           # toolbar popup (React): index.html, main.tsx, App.tsx
 dist/                # build output (git-ignored) — the loadable extension
 ```
 
 The build uses [Vite](https://vite.dev/) with
-[`@crxjs/vite-plugin`](https://crxjs.dev/). The **source** `manifest.json`
-references source files (e.g. `src/background/index.ts`); crxjs bundles them and
-rewrites the paths in the emitted `dist/manifest.json`. `public/` assets are
-copied as-is, so the icons at `public/icons/*` end up at `dist/icons/*`.
+[`@crxjs/vite-plugin`](https://crxjs.dev/); the UI is built with
+[React](https://react.dev/). The **source** `manifest.json` references source
+files (e.g. `src/background/index.ts`, `src/popup/index.html`); crxjs bundles
+them and rewrites the paths in the emitted `dist/manifest.json`. `public/`
+assets are copied as-is, so the icons at `public/icons/*` end up at
+`dist/icons/*`.
 
 ## Permissions
 
