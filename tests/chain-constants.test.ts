@@ -23,7 +23,7 @@ describe('BeeZee chain constants', () => {
     expect(BZE_CHAIN_ID).toBe('beezee-1');
   });
 
-  it('derives on the standard BIP-44 path m/44\'/118\'/0\'/0/0', () => {
+  it("derives on the standard BIP-44 path m/44'/118'/0'/0/0", () => {
     expect(BIP44_PURPOSE).toBe(44);
     expect(BZE_HD_PATH).toBe("m/44'/118'/0'/0/0");
   });
