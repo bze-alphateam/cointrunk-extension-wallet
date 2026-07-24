@@ -55,13 +55,24 @@ watch build with hot-reload while iterating.
 
 ## Scripts
 
-| Script           | Description                              |
-| ---------------- | ---------------------------------------- |
-| `pnpm dev`       | Start Vite in watch mode with HMR         |
-| `pnpm build`     | Build the extension into `dist/`          |
-| `pnpm typecheck` | Type-check the project (no emit)          |
+| Script              | Description                       |
+| ------------------- | --------------------------------- |
+| `pnpm dev`          | Start Vite in watch mode with HMR |
+| `pnpm build`        | Build the extension into `dist/`  |
+| `pnpm typecheck`    | Type-check the project (no emit)  |
+| `pnpm lint`         | Lint with ESLint                  |
+| `pnpm format`       | Format all files with Prettier    |
+| `pnpm format:check` | Check formatting without writing  |
 
-Linting and CI are added in a subsequent ticket (BUS-12).
+## CI
+
+[GitHub Actions](.github/workflows/ci.yml) runs `typecheck`, `lint`,
+`format:check`, and `build` on every push and pull request; the job fails if any
+step fails.
+
+Formatting is handled by [Prettier](https://prettier.io/) (`.prettierrc.json`);
+linting by [ESLint](https://eslint.org/) flat config (`eslint.config.js`), with
+`eslint-config-prettier` disabling rules that would conflict with Prettier.
 
 ## License
 
