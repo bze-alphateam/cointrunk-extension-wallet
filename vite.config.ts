@@ -1,4 +1,5 @@
 import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
 import { crx } from '@crxjs/vite-plugin';
 import manifest from './manifest.json';
 
@@ -8,7 +9,7 @@ import manifest from './manifest.json';
 // the manifest paths in the output. `pnpm dev` runs it with HMR; `pnpm build`
 // produces the loadable dist/.
 export default defineConfig({
-  plugins: [crx({ manifest })],
+  plugins: [react(), crx({ manifest })],
   build: {
     outDir: 'dist',
     emptyOutDir: true,

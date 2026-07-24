@@ -13,7 +13,7 @@ export default tseslint.config(
 
   // Extension source runs in the browser / service-worker context.
   {
-    files: ['src/**/*.ts'],
+    files: ['src/**/*.{ts,tsx}'],
     languageOptions: {
       globals: {
         ...globals.browser,
