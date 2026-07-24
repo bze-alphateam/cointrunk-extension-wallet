@@ -24,6 +24,7 @@ tsconfig.json   # strict TS, noEmit (bundler owns emit)
 
 - `pnpm install` — install deps (run `corepack enable` once first).
 - `pnpm typecheck` — type-check with `tsc --noEmit`.
+- `pnpm test` — run unit tests (Vitest, `tests/*.test.ts`).
 
 **Never run the extension on this VM** (VM-wide rule): build/typecheck/lint/test
 only. Stefan loads the unpacked build in Chrome himself.

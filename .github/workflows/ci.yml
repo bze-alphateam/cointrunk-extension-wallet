@@ -6,7 +6,7 @@ on:
 
 jobs:
   build:
-    name: typecheck · lint · build
+    name: typecheck · lint · test · build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,5 +32,35 @@ jobs:
       - name: Check formatting
         run: pnpm format:check
 
+      - name: Test
+        run: pnpm test
+
       - name: Build
         run: pnpm build
+
+      # PR-only: publish the built extension on the workflow run so a reviewer
+      # can download it and "Load unpacked" without building anything locally.
+      # Artifact downloads come as <name>.zip, so the names below yield
+      # cointrunk-{chrome,firefox}-<short-sha>.zip. Both artifacts share the
+      # same dist/ for now — Firefox-specific manifest tweaks (e.g.
+      # browser_specific_settings.gecko) come with a later ticket.
+      - name: Compute short commit SHA
+        if: github.event_name == 'pull_request'
+        id: sha
+        run: echo "short=$(cut -c1-7 <<< '${{ github.event.pull_request.head.sha }}')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload Chrome build artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cointrunk-chrome-${{ steps.sha.outputs.short }}
+          path: dist/
+          if-no-files-found: error
+
+      - name: Upload Firefox build artifact
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: cointrunk-firefox-${{ steps.sha.outputs.short }}
+          path: dist/
+          if-no-files-found: error
