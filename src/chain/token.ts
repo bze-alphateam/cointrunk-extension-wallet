@@ -63,3 +63,45 @@ export function formatTokenAmount(baseAmount: string, decimals: number): string 
   const fraction = (units % divisor).toString().padStart(decimals, '0').replace(/0+$/u, '');
   return fraction.length === 0 ? whole : `${whole}.${fraction}`;
 }
+
+/**
+ * Parse a human display amount as typed on the Send screen (e.g. `"1.5"`) into a
+ * base-unit integer string — the inverse of {@link formatTokenAmount} and the
+ * one place user input becomes an on-chain amount (BUS-22).
+ *
+ * Accepts a non-negative decimal with an optional fractional part of at most
+ * `decimals` places, and no thousands separators, sign, or exponent. Every
+ * rejection is a specific, user-readable message (empty, not a number, too many
+ * decimals, zero), because this parses what a person typed. Zero is rejected: a
+ * send must move a positive amount. BigInt throughout, so a large amount never
+ * rounds through a JS `number`.
+ *
+ * Examples at `decimals = 6`: `"1" → "1000000"`, `"1.5" → "1500000"`,
+ * `"0.000001" → "1"`, `"1.234567" → "1234567"`.
+ */
+export function parseTokenAmount(input: string, decimals: number): string {
+  if (!Number.isInteger(decimals) || decimals < 0) {
+    throw new Error(`invalid token decimals: ${JSON.stringify(decimals)}`);
+  }
+
+  const trimmed = input.trim();
+  if (trimmed.length === 0) {
+    throw new Error('Enter an amount.');
+  }
+
+  const match = /^(\d+)(?:\.(\d+))?$/u.exec(trimmed);
+  if (!match) {
+    throw new Error('Enter a valid number — digits and an optional decimal point only.');
+  }
+
+  const [, whole, fraction = ''] = match;
+  if (fraction.length > decimals) {
+    throw new Error(`Use at most ${decimals} decimal places.`);
+  }
+
+  const base = BigInt(whole! + fraction.padEnd(decimals, '0'));
+  if (base === 0n) {
+    throw new Error('Amount must be greater than zero.');
+  }
+  return base.toString();
+}
