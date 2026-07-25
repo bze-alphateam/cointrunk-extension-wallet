@@ -4,7 +4,7 @@
  * consume instead of re-deciding (BUS-48).
  *
  * The types mirror the "Stored blob shape" in the Security Model doc; the
- * parameter constants are the ratified Argon2id / AES-256-GCM values.
+ * parameter constants are the ratified PBKDF2 / AES-256-GCM values.
  *
  * Secret-handling invariants every consumer MUST uphold (see the Security Model
  * page on Confluence for the authoritative list):
@@ -25,19 +25,20 @@
 export const VAULT_VERSION = 1;
 
 /**
- * Ratified Argon2id parameters (BUS-48). Memory-hard KDF that stretches the
- * user password into the 32-byte AES key. Values balance offline-brute-force
- * cost against the MV3 service-worker unlock-latency budget; see the Security
- * Model "Encryption at rest" section for the rationale.
+ * Ratified PBKDF2 parameters (BUS-48, revised after the Keplr/MetaMask prior-art
+ * spike — see the Security Model "Prior-art review"). Runs on native WebCrypto
+ * (`SubtleCrypto.deriveKey`), so key derivation is effectively instant and meets
+ * the ≲ 1 s unlock budget, unlike the pure-JS Argon2id it replaces. 600k
+ * iterations is the OWASP 2023 baseline for PBKDF2-HMAC-SHA256; it matches the
+ * design MetaMask ships. The KDF choice is stored per-vault (`kdf.iterations`),
+ * so this can be raised later without a format change.
  */
-export const ARGON2ID_PARAMS = {
-  algo: 'argon2id',
-  /** Memory cost in KiB (65536 KiB = 64 MiB). */
-  mem: 65536,
-  /** Time cost (iterations / passes). */
-  iters: 3,
-  /** Parallelism (lanes). */
-  parallelism: 1,
+export const PBKDF2_PARAMS = {
+  algo: 'pbkdf2',
+  /** HMAC hash used by PBKDF2. */
+  hash: 'SHA-256',
+  /** Iteration count (OWASP 2023 baseline for PBKDF2-HMAC-SHA256). */
+  iterations: 600000,
   /** Random salt length in bytes. */
   saltBytes: 16,
   /** Derived-key length in bytes (AES-256 key). */
@@ -58,13 +59,11 @@ export const AES_GCM_PARAMS = {
 
 /** KDF descriptor persisted in the vault (non-secret; makes the blob self-describing). */
 export interface VaultKdf {
-  algo: 'argon2id';
-  /** Memory cost in KiB. */
-  mem: number;
-  /** Time cost (iterations). */
-  iters: number;
-  /** Parallelism (lanes). */
-  parallelism: number;
+  algo: 'pbkdf2';
+  /** HMAC hash used by PBKDF2. */
+  hash: 'SHA-256';
+  /** Iteration count. */
+  iterations: number;
   /** Base64-encoded random salt. */
   salt: string;
 }

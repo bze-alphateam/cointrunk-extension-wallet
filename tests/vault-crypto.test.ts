@@ -2,7 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import { decryptMnemonic, encryptVault, webCryptoVaultCrypto } from '../src/keyring/vault-crypto';
 import {
   AES_GCM_PARAMS,
-  ARGON2ID_PARAMS,
+  PBKDF2_PARAMS,
   VAULT_VERSION,
   type EncryptedVault,
   type VaultAccount,
@@ -14,16 +14,11 @@ const ACCOUNTS: VaultAccount[] = [
   { address: 'bze1qexampleaddr', hdPath: "m/44'/118'/0'/0/0", label: 'Account 1' },
 ];
 
-// A deliberately cheap KDF cost for the fast tests. The vault records whatever
-// cost was used, so decrypt re-derives correctly; production uses the ratified
-// ARGON2ID_PARAMS — exercised end-to-end in the "default params" test below.
-const FAST_KDF = { mem: 256, iters: 1, parallelism: 1 };
-
 describe('vault encryption at rest (BUS-17)', () => {
   let vault: EncryptedVault;
 
   beforeAll(async () => {
-    vault = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS, FAST_KDF);
+    vault = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS);
   });
 
   it('round-trips the mnemonic with the correct password', async () => {
@@ -49,12 +44,14 @@ describe('vault encryption at rest (BUS-17)', () => {
     expect(serialized).not.toContain(PASSWORD);
   });
 
-  it('matches the versioned schema: v1, argon2id KDF, aes-256-gcm cipher', () => {
+  it('matches the versioned schema: v1, pbkdf2 KDF, aes-256-gcm cipher', () => {
     expect(vault.version).toBe(VAULT_VERSION);
-    expect(Object.keys(vault.kdf).sort()).toEqual(['algo', 'iters', 'mem', 'parallelism', 'salt']);
-    expect(vault.kdf.algo).toBe('argon2id');
+    expect(Object.keys(vault.kdf).sort()).toEqual(['algo', 'hash', 'iterations', 'salt']);
+    expect(vault.kdf.algo).toBe('pbkdf2');
+    expect(vault.kdf.hash).toBe(PBKDF2_PARAMS.hash);
+    expect(vault.kdf.iterations).toBe(PBKDF2_PARAMS.iterations);
     expect(Object.keys(vault.cipher).sort()).toEqual(['algo', 'iv']);
-    expect(vault.cipher.algo).toBe('aes-256-gcm');
+    expect(vault.cipher.algo).toBe(AES_GCM_PARAMS.algo);
     // 16-byte salt → 24 base64 chars; 12-byte IV → 16 base64 chars.
     expect(vault.kdf.salt).toHaveLength(24);
     expect(vault.cipher.iv).toHaveLength(16);
@@ -62,7 +59,7 @@ describe('vault encryption at rest (BUS-17)', () => {
   });
 
   it('uses a fresh random salt + IV on every encryption', async () => {
-    const other = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS, FAST_KDF);
+    const other = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS);
     expect(other.kdf.salt).not.toBe(vault.kdf.salt);
     expect(other.cipher.iv).not.toBe(vault.cipher.iv);
     expect(other.ciphertext).not.toBe(vault.ciphertext);
@@ -71,23 +68,13 @@ describe('vault encryption at rest (BUS-17)', () => {
   it('rejects a wrong password with a generic, non-secret error', async () => {
     await expect(decryptMnemonic(vault, 'wrong password')).rejects.toThrow('invalid password');
   });
-
-  it('encrypts with the ratified default KDF params when none are given', async () => {
-    const prod = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS);
-    expect(prod.kdf.mem).toBe(ARGON2ID_PARAMS.mem);
-    expect(prod.kdf.iters).toBe(ARGON2ID_PARAMS.iters);
-    expect(prod.kdf.parallelism).toBe(ARGON2ID_PARAMS.parallelism);
-    expect(prod.cipher.algo).toBe(AES_GCM_PARAMS.algo);
-    // Full-strength round-trip proves the ratified params actually work.
-    expect(await decryptMnemonic(prod, PASSWORD)).toBe(MNEMONIC);
-  }, 30000);
 });
 
 describe('webCryptoVaultCrypto seam', () => {
   let vault: EncryptedVault;
 
   beforeAll(async () => {
-    vault = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS, FAST_KDF);
+    vault = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS);
   });
 
   it('decrypt proves the password and returns an in-memory signer', async () => {

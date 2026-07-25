@@ -3,36 +3,35 @@
  * that turns a BIP39 mnemonic into the persisted {@link EncryptedVault} and back.
  *
  * Scheme (ratified in {@link ./vault} and the Security Model doc):
- *  - Argon2id stretches the user password into a 32-byte key (via `@noble/hashes`,
- *    the audited pure-JS implementation — no native/WASM dependency).
- *  - AES-256-GCM (native WebCrypto `SubtleCrypto`) encrypts the mnemonic under
- *    that key with a fresh 12-byte IV and a 128-bit authentication tag.
+ *  - PBKDF2-HMAC-SHA256 stretches the user password into a 256-bit AES key,
+ *    entirely on native WebCrypto (`SubtleCrypto`) — no third-party crypto lib
+ *    and no WASM, so derivation is fast enough for the unlock-latency budget.
+ *  - AES-256-GCM (also WebCrypto) encrypts the mnemonic under that key with a
+ *    fresh 12-byte IV and a 128-bit authentication tag.
  *
  * Secret-handling invariants (see {@link ./vault}):
  *  1. Only ciphertext + non-secret metadata (salt, IV, KDF params, accounts) is
  *     ever persisted — never the plaintext mnemonic or derived key.
- *  2. The plaintext mnemonic and derived key exist only transiently in
- *     service-worker memory during an encrypt/decrypt call.
+ *  2. The plaintext mnemonic exists only transiently in service-worker memory
+ *     during an encrypt/decrypt call; the derived key is a non-extractable
+ *     `CryptoKey` that never leaves WebCrypto.
  *  3. A correct password is proven solely by a successful AES-GCM auth-tag check
  *     inside {@link decryptMnemonic} — no separate password hash is stored.
  */
 
-import { argon2id } from '@noble/hashes/argon2.js';
-
 import type { Signer, VaultCrypto } from './crypto';
 import {
   AES_GCM_PARAMS,
-  ARGON2ID_PARAMS,
+  PBKDF2_PARAMS,
   VAULT_VERSION,
   type EncryptedVault,
   type VaultAccount,
 } from './vault';
 
-/** Argon2id cost parameters as they travel to `@noble/hashes` (`m`/`t`/`p`). */
-interface KdfCost {
-  mem: number;
-  iters: number;
-  parallelism: number;
+/** PBKDF2 cost parameters as re-derived from a persisted vault. */
+interface KdfParams {
+  iterations: number;
+  hash: string;
 }
 
 // --- byte / base64 helpers --------------------------------------------------
@@ -64,8 +63,8 @@ function randomBytes(length: number): Uint8Array<ArrayBuffer> {
 
 /**
  * Copy `bytes` into a fresh `ArrayBuffer`-backed view. WebCrypto's `BufferSource`
- * requires an `ArrayBuffer` backing, whereas `TextEncoder` / `@noble/hashes`
- * return the wider `Uint8Array<ArrayBufferLike>`; this normalises them.
+ * requires an `ArrayBuffer` backing, whereas `TextEncoder` returns the wider
+ * `Uint8Array<ArrayBufferLike>`; this normalises it.
  */
 function toBufferSource(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
   const copy = new Uint8Array(bytes.byteLength);
@@ -76,22 +75,28 @@ function toBufferSource(bytes: Uint8Array): Uint8Array<ArrayBuffer> {
 // --- core crypto ------------------------------------------------------------
 
 /**
- * Argon2id(password, salt) → 32-byte AES key. Runs synchronously; called only
- * on the rare, user-initiated encrypt/unlock paths, never in a hot loop.
+ * PBKDF2(password, salt) → a non-extractable AES-256-GCM `CryptoKey`, entirely
+ * inside native WebCrypto. The derived key bytes are never exposed to JS.
  */
-function deriveKey(password: string, salt: Uint8Array, cost: KdfCost): Uint8Array {
-  return argon2id(new TextEncoder().encode(password), salt, {
-    m: cost.mem,
-    t: cost.iters,
-    p: cost.parallelism,
-    dkLen: ARGON2ID_PARAMS.keyBytes,
-  });
-}
-
-function importAesKey(keyBytes: Uint8Array, usage: KeyUsage): Promise<CryptoKey> {
-  return crypto.subtle.importKey('raw', toBufferSource(keyBytes), { name: 'AES-GCM' }, false, [
-    usage,
-  ]);
+async function deriveAesKey(
+  password: string,
+  salt: Uint8Array,
+  kdf: KdfParams,
+): Promise<CryptoKey> {
+  const baseKey = await crypto.subtle.importKey(
+    'raw',
+    toBufferSource(new TextEncoder().encode(password)),
+    'PBKDF2',
+    false,
+    ['deriveKey'],
+  );
+  return crypto.subtle.deriveKey(
+    { name: 'PBKDF2', salt: toBufferSource(salt), iterations: kdf.iterations, hash: kdf.hash },
+    baseKey,
+    { name: 'AES-GCM', length: PBKDF2_PARAMS.keyBytes * 8 },
+    false,
+    ['encrypt', 'decrypt'],
+  );
 }
 
 const gcmParams = (iv: Uint8Array<ArrayBuffer>): AesGcmParams => ({
@@ -105,23 +110,16 @@ const gcmParams = (iv: Uint8Array<ArrayBuffer>): AesGcmParams => ({
  * random salt, AES-256-GCM the mnemonic under a random IV, and assemble the
  * versioned blob. `accounts` is copied field-by-field so only non-secret
  * metadata is carried. The returned vault is safe to persist as-is.
- *
- * `kdfCost` defaults to the ratified {@link ARGON2ID_PARAMS} and is what
- * production always uses. It is a parameter (not a hardcoded constant) because
- * the vault is self-describing — the chosen cost is stored in `kdf`, so
- * {@link decryptMnemonic} re-derives with the same cost regardless. Overriding
- * it (e.g. to a cheap cost in unit tests) exercises the identical code path.
  */
 export async function encryptVault(
   mnemonic: string,
   password: string,
   accounts: readonly VaultAccount[],
-  kdfCost: KdfCost = ARGON2ID_PARAMS,
 ): Promise<EncryptedVault> {
-  const salt = randomBytes(ARGON2ID_PARAMS.saltBytes);
+  const salt = randomBytes(PBKDF2_PARAMS.saltBytes);
   const iv = randomBytes(AES_GCM_PARAMS.ivBytes);
 
-  const key = await importAesKey(deriveKey(password, salt, kdfCost), 'encrypt');
+  const key = await deriveAesKey(password, salt, PBKDF2_PARAMS);
   const ciphertext = new Uint8Array(
     await crypto.subtle.encrypt(
       gcmParams(iv),
@@ -133,10 +131,9 @@ export async function encryptVault(
   return {
     version: VAULT_VERSION,
     kdf: {
-      algo: ARGON2ID_PARAMS.algo,
-      mem: kdfCost.mem,
-      iters: kdfCost.iters,
-      parallelism: kdfCost.parallelism,
+      algo: PBKDF2_PARAMS.algo,
+      hash: PBKDF2_PARAMS.hash,
+      iterations: PBKDF2_PARAMS.iterations,
       salt: bytesToBase64(salt),
     },
     cipher: {
@@ -160,14 +157,10 @@ export async function encryptVault(
  * so no detail about the failure leaks.
  */
 export async function decryptMnemonic(vault: EncryptedVault, password: string): Promise<string> {
-  const key = await importAesKey(
-    deriveKey(password, base64ToBytes(vault.kdf.salt), {
-      mem: vault.kdf.mem,
-      iters: vault.kdf.iters,
-      parallelism: vault.kdf.parallelism,
-    }),
-    'decrypt',
-  );
+  const key = await deriveAesKey(password, base64ToBytes(vault.kdf.salt), {
+    iterations: vault.kdf.iterations,
+    hash: vault.kdf.hash,
+  });
 
   let plaintext: ArrayBuffer;
   try {

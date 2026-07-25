@@ -37,9 +37,8 @@ export function sanitizeVault(vault: EncryptedVault): EncryptedVault {
     version: vault.version,
     kdf: {
       algo: vault.kdf.algo,
-      mem: vault.kdf.mem,
-      iters: vault.kdf.iters,
-      parallelism: vault.kdf.parallelism,
+      hash: vault.kdf.hash,
+      iterations: vault.kdf.iterations,
       salt: vault.kdf.salt,
     },
     cipher: {
