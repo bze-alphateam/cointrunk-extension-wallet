@@ -1,21 +1,21 @@
 import { describe, expect, it } from 'vitest';
 import {
   AES_GCM_PARAMS,
-  ARGON2ID_PARAMS,
+  PBKDF2_PARAMS,
   VAULT_VERSION,
   type EncryptedVault,
 } from '../src/keyring/vault';
 
-// These are the ratified security parameters (BUS-48). Downstream tickets
-// (BUS-17 encrypt, BUS-49 keyring) build on exactly these numbers, so pin them
-// and fail loudly if anyone changes a value without a deliberate schema bump.
+// These are the ratified security parameters (BUS-48, KDF revised to native
+// PBKDF2 after the Keplr/MetaMask prior-art spike). Downstream tickets (BUS-17
+// encrypt, BUS-49 keyring) build on exactly these numbers, so pin them and fail
+// loudly if anyone changes a value without a deliberate schema bump.
 describe('vault crypto parameters', () => {
-  it('pins the Argon2id parameters (64 MiB, t=3, p=1, 16B salt, 32B key)', () => {
-    expect(ARGON2ID_PARAMS).toEqual({
-      algo: 'argon2id',
-      mem: 65536,
-      iters: 3,
-      parallelism: 1,
+  it('pins the PBKDF2 parameters (SHA-256, 600k iters, 16B salt, 32B key)', () => {
+    expect(PBKDF2_PARAMS).toEqual({
+      algo: 'pbkdf2',
+      hash: 'SHA-256',
+      iterations: 600000,
       saltBytes: 16,
       keyBytes: 32,
     });
@@ -40,7 +40,7 @@ describe('EncryptedVault schema', () => {
     // Security Model doc. A plaintext mnemonic must never appear here.
     const sample: EncryptedVault = {
       version: VAULT_VERSION,
-      kdf: { algo: 'argon2id', mem: 65536, iters: 3, parallelism: 1, salt: 'c2FsdA==' },
+      kdf: { algo: 'pbkdf2', hash: 'SHA-256', iterations: 600000, salt: 'c2FsdA==' },
       cipher: { algo: 'aes-256-gcm', iv: 'aXYtMTItYnl0ZXM=' },
       ciphertext: 'Y2lwaGVydGV4dA==',
       accounts: [{ address: 'bze1example', hdPath: "m/44'/118'/0'/0/0", label: 'Account 1' }],

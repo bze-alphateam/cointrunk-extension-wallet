@@ -8,7 +8,7 @@ import type { EncryptedVault } from '../src/keyring/vault';
 // A representative persisted vault: encrypted blob + non-secret metadata only.
 const VAULT: EncryptedVault = {
   version: 1,
-  kdf: { algo: 'argon2id', mem: 65536, iters: 3, parallelism: 1, salt: 'c2FsdA==' },
+  kdf: { algo: 'pbkdf2', hash: 'SHA-256', iterations: 600000, salt: 'c2FsdA==' },
   cipher: { algo: 'aes-256-gcm', iv: 'aXYtMTItYnl0ZXM=' },
   ciphertext: 'Y2lwaGVydGV4dA==',
   accounts: [{ address: 'bze1example', hdPath: "m/44'/118'/0'/0/0", label: 'Account 1' }],
@@ -95,9 +95,8 @@ describe('ChromeVaultStore', () => {
     // Nested objects are reconstructed too, so a smuggled key inside kdf is dropped.
     expect(Object.keys(stored.kdf as object).sort()).toEqual([
       'algo',
-      'iters',
-      'mem',
-      'parallelism',
+      'hash',
+      'iterations',
       'salt',
     ]);
   });
