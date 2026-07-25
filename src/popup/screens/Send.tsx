@@ -81,9 +81,7 @@ export function Send({ onClose }: SendProps) {
       const toAddress = validateRecipientAddress(recipient);
       const base = parseTokenAmount(amount, decimals);
       if (!balance) {
-        throw new Error(
-          balanceError ?? 'Your balance is still loading — try again in a moment.',
-        );
+        throw new Error(balanceError ?? 'Your balance is still loading — try again in a moment.');
       }
       if (BigInt(withFee(base)) > BigInt(balance.amount)) {
         throw new Error(
@@ -115,7 +113,9 @@ export function Send({ onClose }: SendProps) {
     }
   }
 
-  const available = balance ? `${formatTokenAmount(balance.amount, decimals)} ${displayDenom}` : null;
+  const available = balance
+    ? `${formatTokenAmount(balance.amount, decimals)} ${displayDenom}`
+    : null;
 
   return (
     <section className="screen">

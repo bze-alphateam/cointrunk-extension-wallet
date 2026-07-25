@@ -38,10 +38,13 @@ describe('send request (BUS-22)', () => {
     const { keyring, address } = await keyringWithAccount();
     const transactions = new FakeTransactionService({ hash: 'ABC123' });
 
-    const response = await handleKeyringRequest(services(keyring, undefined, undefined, transactions), {
-      type: 'send',
-      request: { toAddress: RECIPIENT, amount: '1000000' },
-    });
+    const response = await handleKeyringRequest(
+      services(keyring, undefined, undefined, transactions),
+      {
+        type: 'send',
+        request: { toAddress: RECIPIENT, amount: '1000000' },
+      },
+    );
 
     expect(response).toEqual({ ok: true, data: { hash: 'ABC123' } });
     // The sender is the active account — supplied by the background, not the popup.
@@ -56,10 +59,13 @@ describe('send request (BUS-22)', () => {
     const { keyring } = await keyringWithAccount();
     const transactions = new FakeTransactionService({ hash: 'NOPE' });
 
-    const response = await handleKeyringRequest(services(keyring, undefined, undefined, transactions), {
-      type: 'send',
-      request: { toAddress: 'cosmos1qv9pzxqlyckngw6zf9g9whn9d3eh4qvg3he2nj', amount: '1000000' },
-    });
+    const response = await handleKeyringRequest(
+      services(keyring, undefined, undefined, transactions),
+      {
+        type: 'send',
+        request: { toAddress: 'cosmos1qv9pzxqlyckngw6zf9g9whn9d3eh4qvg3he2nj', amount: '1000000' },
+      },
+    );
 
     expect(response.ok).toBe(false);
     expect(transactions.lastParams).toBeNull();
@@ -69,10 +75,13 @@ describe('send request (BUS-22)', () => {
     const keyring = new Keyring(new MemoryStore(), webCryptoVaultCrypto);
     const transactions = new FakeTransactionService({ hash: 'NOPE' });
 
-    const response = await handleKeyringRequest(services(keyring, undefined, undefined, transactions), {
-      type: 'send',
-      request: { toAddress: RECIPIENT, amount: '1000000' },
-    });
+    const response = await handleKeyringRequest(
+      services(keyring, undefined, undefined, transactions),
+      {
+        type: 'send',
+        request: { toAddress: RECIPIENT, amount: '1000000' },
+      },
+    );
 
     expect(response.ok).toBe(false);
     expect(transactions.lastParams).toBeNull();
@@ -82,10 +91,13 @@ describe('send request (BUS-22)', () => {
     const { keyring } = await keyringWithAccount();
     const transactions = new FakeTransactionService(new Error('Sending is unavailable right now.'));
 
-    const response = await handleKeyringRequest(services(keyring, undefined, undefined, transactions), {
-      type: 'send',
-      request: { toAddress: RECIPIENT, amount: '1000000' },
-    });
+    const response = await handleKeyringRequest(
+      services(keyring, undefined, undefined, transactions),
+      {
+        type: 'send',
+        request: { toAddress: RECIPIENT, amount: '1000000' },
+      },
+    );
 
     expect(response).toEqual({ ok: false, error: 'Sending is unavailable right now.' });
   });

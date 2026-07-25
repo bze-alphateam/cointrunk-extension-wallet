@@ -44,7 +44,9 @@ export function validateRecipientAddress(input: string): string {
   }
 
   if (decoded.prefix !== BZE_BECH32_PREFIX) {
-    throw new Error(`Enter a BeeZee (${BZE_BECH32_PREFIX}1…) address — that one is for another chain.`);
+    throw new Error(
+      `Enter a BeeZee (${BZE_BECH32_PREFIX}1…) address — that one is for another chain.`,
+    );
   }
   if (decoded.data.length !== ACCOUNT_ADDRESS_BYTES) {
     throw new Error('That is not a valid account address.');
