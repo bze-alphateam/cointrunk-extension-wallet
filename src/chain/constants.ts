@@ -30,6 +30,31 @@ export const BIP44_PURPOSE = 44;
 export const BZE_CHAIN_ID = 'beezee-1';
 
 /**
+ * On-chain base ("micro") denomination of the native token, as the bank module
+ * stores and returns it. Balances and amounts on the wire are always integers of
+ * this unit.
+ *
+ * Confirmed against three sources (BUS-19):
+ *  - Chain genesis (`bze-alphateam/bze` `genesis.json`) — staking `bond_denom`,
+ *    mint `mint_denom` and gentx amounts are all `ubze`.
+ *  - Cosmos `u`-prefix micro convention: `u` + symbol.
+ *  - Frontend Keplr config (`bze-frontend-apps` `packages/ui-kit`) —
+ *    `coinMinimalDenom: "ubze"`.
+ */
+export const BZE_BASE_DENOM = 'ubze';
+
+/** Human-facing symbol for the native token (`coinDenom` in the Keplr config). */
+export const BZE_DISPLAY_DENOM = 'BZE';
+
+/**
+ * Decimal places between the base denom and the display denom: `1 BZE = 10^6
+ * ubze`. The chain ships no on-chain `denom_metadata` (genesis `denom_metadata`
+ * is empty), so this is pinned from the `u`-micro convention and the frontend
+ * Keplr config's `coinDecimals: 6` — the value every existing BZE app renders.
+ */
+export const BZE_DISPLAY_DECIMALS = 6;
+
+/**
  * Default BIP-44 HD derivation path for the first BeeZee account:
  * `m / 44' / 118' / 0' / 0 / 0`.
  *
