@@ -18,6 +18,12 @@ import type { VaultAccount } from './vault';
 export type KeyringRequest =
   | { readonly type: 'getState' }
   | { readonly type: 'createAccount'; readonly password: string; readonly label?: string }
+  | {
+      readonly type: 'importAccount';
+      readonly mnemonic: string;
+      readonly password: string;
+      readonly label?: string;
+    }
   | { readonly type: 'unlock'; readonly password: string }
   | { readonly type: 'lock' }
   | { readonly type: 'getAccounts' }
@@ -32,6 +38,8 @@ export interface KeyringResponseData {
    * and safe. Popup code MUST render it and drop it — never store or forward it.
    */
   createAccount: CreatedAccount;
+  /** Non-secret: the user already has the phrase they imported. */
+  importAccount: KeyringState;
   unlock: KeyringState;
   lock: KeyringState;
   getAccounts: readonly VaultAccount[];
@@ -70,6 +78,11 @@ export async function handleKeyringRequest(
         return { ok: true, data: await keyring.getState() };
       case 'createAccount':
         return { ok: true, data: await keyring.createAccount(request.password, request.label) };
+      case 'importAccount':
+        return {
+          ok: true,
+          data: await keyring.importAccount(request.mnemonic, request.password, request.label),
+        };
       case 'unlock':
         return { ok: true, data: await keyring.unlock(request.password) };
       case 'lock':
