@@ -77,6 +77,43 @@ body {
   word-break: break-all;
 }
 
+/* --- balance --------------------------------------------------------------- */
+
+.balance {
+  padding: 14px 12px;
+  border-radius: 10px;
+  background: var(--ct-surface);
+  text-align: center;
+}
+
+.balance__amount {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  line-height: 1.2;
+  font-variant-numeric: tabular-nums;
+  word-break: break-all;
+}
+
+.balance__denom {
+  margin-left: 6px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--ct-muted);
+}
+
+.balance__loading {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ct-muted);
+}
+
+.balance__error {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--ct-danger);
+}
+
 /* --- forms ----------------------------------------------------------------- */
 
 .form {
