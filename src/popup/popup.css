@@ -68,13 +68,41 @@ body {
 }
 
 .address {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
   margin: 0;
   padding: 8px 10px;
+  border: 1px solid var(--ct-border);
   border-radius: 8px;
   background: var(--ct-surface);
+  color: var(--ct-fg);
+  font: inherit;
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
   font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.address:focus-visible {
+  outline: 2px solid var(--ct-accent);
+  outline-offset: 1px;
+}
+
+.address__value {
   word-break: break-all;
+}
+
+.address__action {
+  flex: none;
+  font-family: system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ct-accent);
 }
 
 /* --- balance --------------------------------------------------------------- */
