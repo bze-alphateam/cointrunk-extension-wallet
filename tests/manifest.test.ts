@@ -35,4 +35,16 @@ describe('MV3 manifest invariants', () => {
     expect(manifest).not.toHaveProperty('host_permissions');
     expect(manifest).not.toHaveProperty('content_security_policy');
   });
+
+  // BUS-15 AC4 / Security Model: the mnemonic must never be exposed to the page
+  // context. With no content script and nothing web-accessible, there is no
+  // channel from a web page into the extension at all — the guarantee holds by
+  // construction, not by discipline. The injected provider (a later epic) will
+  // add a content script; when it does, it must keep the no-secrets rule and
+  // this test must be revisited deliberately rather than silently deleted.
+  it('exposes no page-context surface (no content scripts, nothing web-accessible)', () => {
+    expect(manifest).not.toHaveProperty('content_scripts');
+    expect(manifest).not.toHaveProperty('web_accessible_resources');
+    expect(manifest).not.toHaveProperty('externally_connectable');
+  });
 });

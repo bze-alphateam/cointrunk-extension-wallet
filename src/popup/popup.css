@@ -2,8 +2,11 @@
   color-scheme: light dark;
   --ct-bg: #0f172a;
   --ct-fg: #f1f5f9;
-  --ct-accent: #0d9488;
+  --ct-accent: #2dd4bf;
   --ct-muted: #94a3b8;
+  --ct-surface: #1e293b;
+  --ct-border: #334155;
+  --ct-danger: #fca5a5;
 }
 
 * {
@@ -30,24 +33,153 @@ body {
 .app {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 8px;
-  padding: 24px 16px;
+  padding: 20px 16px;
+}
+
+/* --- screens --------------------------------------------------------------- */
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.screen--centered {
+  align-items: center;
   text-align: center;
 }
 
-.app__logo {
+.screen__logo {
   border-radius: 12px;
 }
 
-.app__title {
-  margin: 4px 0 0;
+.screen__title {
+  margin: 0;
   font-size: 1.125rem;
   font-weight: 600;
 }
 
-.app__subtitle {
+.screen__body {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
   color: var(--ct-muted);
+}
+
+.address {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: var(--ct-surface);
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.8125rem;
+  word-break: break-all;
+}
+
+/* --- forms ----------------------------------------------------------------- */
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--ct-muted);
+}
+
+.form__input {
+  padding: 8px 10px;
+  border: 1px solid var(--ct-border);
+  border-radius: 8px;
+  background: var(--ct-surface);
+  color: var(--ct-fg);
+  font: inherit;
+  font-size: 0.875rem;
+}
+
+.form__input:focus-visible {
+  outline: 2px solid var(--ct-accent);
+  outline-offset: 1px;
+}
+
+.form__hint {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ct-muted);
+}
+
+.form__error {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--ct-danger);
+}
+
+/* --- controls -------------------------------------------------------------- */
+
+.button {
+  margin-top: 8px;
+  padding: 9px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: var(--ct-accent);
+  color: #04231f;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.button--link {
+  margin-top: 4px;
+  background: none;
+  color: var(--ct-muted);
+  font-weight: 400;
+}
+
+.checkbox {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ct-muted);
+  cursor: pointer;
+}
+
+/* --- recovery phrase ------------------------------------------------------- */
+
+.phrase {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 4px;
+  margin: 0;
+  padding: 10px;
+  border: 1px solid var(--ct-border);
+  border-radius: 8px;
+  background: var(--ct-surface);
+  list-style: none;
+}
+
+.phrase__word {
+  display: flex;
+  gap: 4px;
+  align-items: baseline;
+  font-size: 0.75rem;
+}
+
+.phrase__index {
+  min-width: 14px;
+  color: var(--ct-muted);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
 }
