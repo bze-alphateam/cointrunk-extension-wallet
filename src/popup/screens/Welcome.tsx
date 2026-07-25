@@ -5,9 +5,10 @@
 
 interface WelcomeProps {
   readonly onCreate: () => void;
+  readonly onImport: () => void;
 }
 
-export function Welcome({ onCreate }: WelcomeProps) {
+export function Welcome({ onCreate, onImport }: WelcomeProps) {
   return (
     <section className="screen screen--centered">
       <img className="screen__logo" src="/icons/icon-48.png" alt="" width={48} height={48} />
@@ -15,6 +16,9 @@ export function Welcome({ onCreate }: WelcomeProps) {
       <p className="screen__body">Your BeeZee wallet. Keys stay on this device.</p>
       <button className="button" type="button" onClick={onCreate}>
         Create a new wallet
+      </button>
+      <button className="button button--secondary" type="button" onClick={onImport}>
+        Import an existing wallet
       </button>
     </section>
   );

@@ -14,7 +14,7 @@
  * survives in storage. See the vault schema and the Security Model doc.
  */
 
-import { deriveAccount, generateMnemonic } from './account';
+import { assertValidMnemonic, deriveAccount, generateMnemonic, normalizeMnemonic } from './account';
 import type { SignRequest, Signer, VaultCrypto } from './crypto';
 import type { VaultStore } from './storage';
 import type { VaultAccount } from './vault';
@@ -97,6 +97,26 @@ export class Keyring {
     const mnemonic = generateMnemonic();
     const state = await this.persistNewWallet(mnemonic, password, label);
     return { mnemonic, state };
+  }
+
+  /**
+   * Import an existing wallet from a user-supplied mnemonic (BUS-16): normalise
+   * and validate it, derive the BeeZee account, encrypt under `password`, and
+   * persist. The keyring is left unlocked, exactly as after `createAccount`.
+   *
+   * Returns only the non-secret {@link KeyringState} — unlike `createAccount`,
+   * nothing secret comes back, because the user already has this phrase.
+   *
+   * The mnemonic is a parameter and a local here and nowhere else: it is not
+   * logged, not echoed in the validation errors, and only its ciphertext is
+   * persisted.
+   */
+  async importAccount(mnemonic: string, password: string, label?: string): Promise<KeyringState> {
+    await this.assertNoExistingWallet();
+
+    const normalized = normalizeMnemonic(mnemonic);
+    assertValidMnemonic(normalized);
+    return this.persistNewWallet(normalized, password, label);
   }
 
   /** Guard shared by every wallet-setup path: v1 refuses to overwrite a vault. */

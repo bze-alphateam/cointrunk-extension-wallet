@@ -12,15 +12,34 @@
 
 import type { SignRequest } from './crypto';
 import type { CreatedAccount, Keyring, KeyringState } from './keyring';
+import { assertValidAutoLockMinutes, type SettingsStore, type WalletSettings } from './settings';
 import type { VaultAccount } from './vault';
+
+/**
+ * What the router needs to answer a request. Settings live outside the keyring
+ * on purpose: the keyring's job is key material, and a preferences read has no
+ * business going through the object that holds the signer.
+ */
+export interface KeyringServices {
+  readonly keyring: Keyring;
+  readonly settings: SettingsStore;
+}
 
 /** Every request the popup can send. Discriminated by `type`. */
 export type KeyringRequest =
   | { readonly type: 'getState' }
   | { readonly type: 'createAccount'; readonly password: string; readonly label?: string }
+  | {
+      readonly type: 'importAccount';
+      readonly mnemonic: string;
+      readonly password: string;
+      readonly label?: string;
+    }
   | { readonly type: 'unlock'; readonly password: string }
   | { readonly type: 'lock' }
   | { readonly type: 'getAccounts' }
+  | { readonly type: 'getSettings' }
+  | { readonly type: 'setAutoLockMinutes'; readonly minutes: number }
   | { readonly type: 'sign'; readonly request: SignRequest };
 
 /** Success payload for each request type. */
@@ -32,9 +51,13 @@ export interface KeyringResponseData {
    * and safe. Popup code MUST render it and drop it — never store or forward it.
    */
   createAccount: CreatedAccount;
+  /** Non-secret: the user already has the phrase they imported. */
+  importAccount: KeyringState;
   unlock: KeyringState;
   lock: KeyringState;
   getAccounts: readonly VaultAccount[];
+  getSettings: WalletSettings;
+  setAutoLockMinutes: WalletSettings;
   sign: unknown;
 }
 
@@ -61,7 +84,7 @@ function assertNever(request: never): never {
  * a well-formed reply.
  */
 export async function handleKeyringRequest(
-  keyring: Keyring,
+  { keyring, settings }: KeyringServices,
   request: KeyringRequest,
 ): Promise<KeyringResponse> {
   try {
@@ -70,12 +93,25 @@ export async function handleKeyringRequest(
         return { ok: true, data: await keyring.getState() };
       case 'createAccount':
         return { ok: true, data: await keyring.createAccount(request.password, request.label) };
+      case 'importAccount':
+        return {
+          ok: true,
+          data: await keyring.importAccount(request.mnemonic, request.password, request.label),
+        };
       case 'unlock':
         return { ok: true, data: await keyring.unlock(request.password) };
       case 'lock':
         return { ok: true, data: await keyring.lock() };
       case 'getAccounts':
         return { ok: true, data: await keyring.getAccounts() };
+      case 'getSettings':
+        return { ok: true, data: await settings.load() };
+      case 'setAutoLockMinutes': {
+        assertValidAutoLockMinutes(request.minutes);
+        const updated: WalletSettings = { autoLockMinutes: request.minutes };
+        await settings.save(updated);
+        return { ok: true, data: updated };
+      }
       case 'sign':
         return { ok: true, data: await keyring.sign(request.request) };
       default:
