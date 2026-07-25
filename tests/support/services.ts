@@ -4,6 +4,7 @@
  */
 
 import type { Balance, BalanceService } from '../../src/chain/balance';
+import type { FeeEligibilityService, FeeTokenEligibility } from '../../src/chain/fees';
 import type { SendParams, TransactionService, TxResult } from '../../src/chain/tx';
 import type { Keyring } from '../../src/keyring/keyring';
 import type { KeyringServices } from '../../src/keyring/messages';
@@ -62,12 +63,31 @@ export class FakeTransactionService implements TransactionService {
   };
 }
 
-/** Bundle a keyring with fresh settings, balance and transaction doubles. */
+/**
+ * `FeeEligibilityService` double that records the address it was asked about and
+ * returns a fixed eligibility — or rejects, to exercise the hook's error path.
+ */
+export class FakeFeeEligibilityService implements FeeEligibilityService {
+  checkedAddress: string | null = null;
+
+  constructor(private readonly result: FeeTokenEligibility | Error = { eligible: true }) {}
+
+  check = async (address: string): Promise<FeeTokenEligibility> => {
+    this.checkedAddress = address;
+    if (this.result instanceof Error) {
+      throw this.result;
+    }
+    return this.result;
+  };
+}
+
+/** Bundle a keyring with fresh settings, balance, transaction and fee doubles. */
 export function services(
   keyring: Keyring,
   settings = new MemorySettingsStore(),
   balance = new FakeBalanceService(),
   transactions = new FakeTransactionService(),
+  feeEligibility = new FakeFeeEligibilityService(),
 ): KeyringServices {
-  return { keyring, settings, balance, transactions };
+  return { keyring, settings, balance, transactions, feeEligibility };
 }

@@ -14,6 +14,7 @@
  */
 
 import { UnavailableBalanceService } from '../chain/balance';
+import { UnavailableFeeEligibilityService } from '../chain/fees';
 import { UnavailableTransactionService } from '../chain/tx';
 import { AutoLock, chromeAlarmScheduler } from '../keyring/autolock';
 import { Keyring } from '../keyring/keyring';
@@ -35,6 +36,9 @@ const balance = new UnavailableBalanceService();
 // until Epic 4 wires the RPC client, so the send flow exercises its failure
 // state. The full form → review → confirm path above the seam is real.
 const transactions = new UnavailableTransactionService();
+// Placeholder for the BUS-23 failure-path hook: re-checking whether the account
+// can pay fees. Alt-fee-token support is Epic 7, which swaps in the real check.
+const feeEligibility = new UnavailableFeeEligibilityService();
 
 // Popup ↔ background message bridge. `handleKeyringRequest` never throws, and
 // returning `true` keeps the message channel open for the async `sendResponse`.
@@ -44,7 +48,7 @@ const transactions = new UnavailableTransactionService();
 // it clears the alarm. Reconciling after the fact means unlock arms the timer
 // and lock disarms it without either code path knowing the auto-lock exists.
 chrome.runtime.onMessage.addListener((message: KeyringRequest, _sender, sendResponse) => {
-  handleKeyringRequest({ keyring, settings, balance, transactions }, message)
+  handleKeyringRequest({ keyring, settings, balance, transactions, feeEligibility }, message)
     .then(async (response) => {
       await autoLock.sync();
       return response;
