@@ -14,6 +14,7 @@
  * survives in storage. See the vault schema and the Security Model doc.
  */
 
+import { deriveAccount, generateMnemonic } from './account';
 import type { SignRequest, Signer, VaultCrypto } from './crypto';
 import type { VaultStore } from './storage';
 import type { VaultAccount } from './vault';
@@ -27,6 +28,27 @@ export type KeyringStatus = 'uninitialized' | 'locked' | 'unlocked';
 export interface KeyringState {
   readonly status: KeyringStatus;
   readonly accounts: readonly VaultAccount[];
+}
+
+/**
+ * Result of creating a brand-new wallet (BUS-15).
+ *
+ * This is the ONE response in the whole message API that carries secret
+ * material: the freshly generated mnemonic, so the popup can render the
+ * write-it-down backup screen. It is deliberate and bounded:
+ *  - it is returned exactly once, as the direct reply to `createAccount`;
+ *  - there is no request that re-reads the mnemonic afterwards, so a popup that
+ *    discards it cannot get it back;
+ *  - it goes only to the extension's own popup — never to a content script or
+ *    page, which is the boundary the Security Model's threat model draws.
+ * A wallet cannot be non-custodial without showing the user their phrase once;
+ * see the security note in the PR/ticket.
+ */
+export interface CreatedAccount {
+  /** The new mnemonic, for one-time display on the backup screen. */
+  readonly mnemonic: string;
+  /** Non-secret state after creation (the wallet is left unlocked). */
+  readonly state: KeyringState;
 }
 
 export class Keyring {
@@ -55,6 +77,52 @@ export class Keyring {
       status: this.signer ? 'unlocked' : 'locked',
       accounts: vault.accounts,
     };
+  }
+
+  /**
+   * Create a brand-new wallet (BUS-15): generate a 24-word BIP39 mnemonic,
+   * derive the BeeZee account from it, encrypt the mnemonic under `password`,
+   * and persist only the resulting blob. The keyring is left unlocked.
+   *
+   * The plaintext mnemonic exists only as a local in this method and in the
+   * returned {@link CreatedAccount}; it is never written to storage (the store
+   * only ever sees the encrypted vault) and never logged.
+   *
+   * Refuses if a wallet already exists — v1 holds a single account, and silently
+   * replacing a vault would destroy the user's funds.
+   */
+  async createAccount(password: string, label?: string): Promise<CreatedAccount> {
+    await this.assertNoExistingWallet();
+
+    const mnemonic = generateMnemonic();
+    const state = await this.persistNewWallet(mnemonic, password, label);
+    return { mnemonic, state };
+  }
+
+  /** Guard shared by every wallet-setup path: v1 refuses to overwrite a vault. */
+  private async assertNoExistingWallet(): Promise<void> {
+    if (await this.store.load()) {
+      throw new Error('a wallet already exists');
+    }
+  }
+
+  /**
+   * Encrypt `mnemonic`, persist the vault, and unlock the keyring — the shared
+   * tail of every wallet-setup path. Unlocking goes through the normal
+   * `decrypt` path so creation exercises exactly the same code an unlock does,
+   * proving the blob is readable back before the user is told they're set up.
+   */
+  private async persistNewWallet(
+    mnemonic: string,
+    password: string,
+    label?: string,
+  ): Promise<KeyringState> {
+    const account = await deriveAccount(mnemonic, label);
+    const vault = await this.crypto.encrypt(mnemonic, password, [account]);
+    await this.store.save(vault);
+
+    this.signer = await this.crypto.decrypt(vault, password);
+    return { status: 'unlocked', accounts: vault.accounts };
   }
 
   /**

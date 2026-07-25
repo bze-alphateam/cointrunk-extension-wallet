@@ -190,10 +190,12 @@ const unimplementedSigner: Signer = {
 
 /**
  * The concrete {@link VaultCrypto} the keyring is wired with (replacing the
- * BUS-49 `unavailableCrypto` stub). `decrypt` recovers the mnemonic — which
- * proves the password via the GCM auth tag — and returns the in-memory signer.
+ * BUS-49 `unavailableCrypto` stub). `encrypt` produces the persistable blob for
+ * a new or imported account; `decrypt` recovers the mnemonic — which proves the
+ * password via the GCM auth tag — and returns the in-memory signer.
  */
 export const webCryptoVaultCrypto: VaultCrypto = {
+  encrypt: encryptVault,
   async decrypt(vault: EncryptedVault, password: string): Promise<Signer> {
     await decryptMnemonic(vault, password);
     return unimplementedSigner;

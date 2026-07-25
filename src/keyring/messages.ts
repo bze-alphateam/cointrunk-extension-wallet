@@ -11,12 +11,13 @@
  */
 
 import type { SignRequest } from './crypto';
-import type { Keyring, KeyringState } from './keyring';
+import type { CreatedAccount, Keyring, KeyringState } from './keyring';
 import type { VaultAccount } from './vault';
 
 /** Every request the popup can send. Discriminated by `type`. */
 export type KeyringRequest =
   | { readonly type: 'getState' }
+  | { readonly type: 'createAccount'; readonly password: string; readonly label?: string }
   | { readonly type: 'unlock'; readonly password: string }
   | { readonly type: 'lock' }
   | { readonly type: 'getAccounts' }
@@ -25,6 +26,12 @@ export type KeyringRequest =
 /** Success payload for each request type. */
 export interface KeyringResponseData {
   getState: KeyringState;
+  /**
+   * The only response carrying secret material: the new mnemonic, for the
+   * one-time backup screen. See {@link CreatedAccount} for why this is bounded
+   * and safe. Popup code MUST render it and drop it — never store or forward it.
+   */
+  createAccount: CreatedAccount;
   unlock: KeyringState;
   lock: KeyringState;
   getAccounts: readonly VaultAccount[];
@@ -61,6 +68,8 @@ export async function handleKeyringRequest(
     switch (request.type) {
       case 'getState':
         return { ok: true, data: await keyring.getState() };
+      case 'createAccount':
+        return { ok: true, data: await keyring.createAccount(request.password, request.label) };
       case 'unlock':
         return { ok: true, data: await keyring.unlock(request.password) };
       case 'lock':

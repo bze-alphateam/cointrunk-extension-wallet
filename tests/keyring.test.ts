@@ -32,11 +32,22 @@ const fakeSigner: Signer = {
   sign: async (request) => ({ signed: true, request }),
 };
 
+/**
+ * Stand-in for the real encryption: builds a vault whose "ciphertext" is a
+ * marker rather than the mnemonic, so a test asserting no plaintext leaked into
+ * storage is meaningful. Real crypto is covered in vault-crypto.test.ts.
+ */
+const fakeEncrypt: VaultCrypto['encrypt'] = async (_mnemonic, _password, accounts) => ({
+  ...VAULT,
+  accounts: [...accounts],
+});
+
 /** Crypto that always "decrypts" — stands in for BUS-17 with a correct password. */
-const okCrypto: VaultCrypto = { decrypt: async () => fakeSigner };
+const okCrypto: VaultCrypto = { encrypt: fakeEncrypt, decrypt: async () => fakeSigner };
 
 /** Crypto that rejects — stands in for a wrong password / tampered blob. */
 const rejectCrypto: VaultCrypto = {
+  encrypt: fakeEncrypt,
   decrypt: async () => {
     throw new Error('bad password');
   },
