@@ -124,6 +124,18 @@ body {
   color: var(--ct-danger);
 }
 
+.form__note {
+  margin: 4px 0 0;
+  font-size: 0.75rem;
+  color: var(--ct-accent);
+}
+
+/* Full-width form inside a centred screen (e.g. the unlock gate). */
+.form--wide {
+  align-self: stretch;
+  text-align: left;
+}
+
 /* --- controls -------------------------------------------------------------- */
 
 .button {
