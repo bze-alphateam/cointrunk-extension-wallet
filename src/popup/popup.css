@@ -101,6 +101,11 @@ body {
   font-size: 0.875rem;
 }
 
+.form__input--area {
+  resize: vertical;
+  line-height: 1.5;
+}
+
 .form__input:focus-visible {
   outline: 2px solid var(--ct-accent);
   outline-offset: 1px;
@@ -137,6 +142,13 @@ body {
 .button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.button--secondary {
+  margin-top: 0;
+  background: var(--ct-surface);
+  border: 1px solid var(--ct-border);
+  color: var(--ct-fg);
 }
 
 .button--link {

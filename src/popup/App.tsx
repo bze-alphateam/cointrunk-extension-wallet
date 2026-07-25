@@ -9,10 +9,11 @@ import type { KeyringState } from '../keyring/keyring';
 import { request } from './keyringClient';
 import { CreateWallet } from './screens/CreateWallet';
 import { Home } from './screens/Home';
+import { ImportWallet } from './screens/ImportWallet';
 import { Welcome } from './screens/Welcome';
 
 /** Which setup screen the user has navigated to; `null` = follow the keyring state. */
-type SetupRoute = 'create' | null;
+type SetupRoute = 'create' | 'import' | null;
 
 export function App() {
   const [state, setState] = useState<KeyringState | null>(null);
@@ -43,16 +44,24 @@ export function App() {
     );
   }
 
+  /** Both setup flows end the same way: adopt the new state and leave the route. */
+  function finishSetup(next: KeyringState) {
+    setState(next);
+    setRoute(null);
+  }
+
   if (route === 'create') {
     return (
       <main className="app">
-        <CreateWallet
-          onCreated={(next) => {
-            setState(next);
-            setRoute(null);
-          }}
-          onCancel={() => setRoute(null)}
-        />
+        <CreateWallet onCreated={finishSetup} onCancel={() => setRoute(null)} />
+      </main>
+    );
+  }
+
+  if (route === 'import') {
+    return (
+      <main className="app">
+        <ImportWallet onImported={finishSetup} onCancel={() => setRoute(null)} />
       </main>
     );
   }
@@ -60,7 +69,7 @@ export function App() {
   return (
     <main className="app">
       {state.status === 'uninitialized' ? (
-        <Welcome onCreate={() => setRoute('create')} />
+        <Welcome onCreate={() => setRoute('create')} onImport={() => setRoute('import')} />
       ) : (
         // The unlock screen for the `locked` state lands in BUS-18; until then
         // Home at least shows the account metadata, which is visible while locked.
