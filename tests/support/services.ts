@@ -3,6 +3,7 @@
  * Vitest does not collect it — it is imported by the suites that need it.
  */
 
+import type { Balance, BalanceService } from '../../src/chain/balance';
 import type { Keyring } from '../../src/keyring/keyring';
 import type { KeyringServices } from '../../src/keyring/messages';
 import {
@@ -24,7 +25,29 @@ export class MemorySettingsStore implements SettingsStore {
   };
 }
 
-/** Bundle a keyring with a fresh settings store for `handleKeyringRequest`. */
-export function services(keyring: Keyring, settings = new MemorySettingsStore()): KeyringServices {
-  return { keyring, settings };
+/**
+ * `BalanceService` double that records the address it was asked about and
+ * returns a fixed balance — or rejects, to exercise the error path.
+ */
+export class FakeBalanceService implements BalanceService {
+  queriedAddress: string | null = null;
+
+  constructor(private readonly result: Balance | Error = { denom: 'ubze', amount: '0' }) {}
+
+  getBalance = async (address: string): Promise<Balance> => {
+    this.queriedAddress = address;
+    if (this.result instanceof Error) {
+      throw this.result;
+    }
+    return this.result;
+  };
+}
+
+/** Bundle a keyring with fresh settings and balance doubles for the router. */
+export function services(
+  keyring: Keyring,
+  settings = new MemorySettingsStore(),
+  balance = new FakeBalanceService(),
+): KeyringServices {
+  return { keyring, settings, balance };
 }

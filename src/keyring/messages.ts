@@ -10,19 +10,22 @@
  * {@link sendKeyringRequest}.
  */
 
+import type { Balance, BalanceService } from '../chain/balance';
 import type { SignRequest } from './crypto';
 import type { CreatedAccount, Keyring, KeyringState } from './keyring';
 import { assertValidAutoLockMinutes, type SettingsStore, type WalletSettings } from './settings';
 import type { VaultAccount } from './vault';
 
 /**
- * What the router needs to answer a request. Settings live outside the keyring
- * on purpose: the keyring's job is key material, and a preferences read has no
- * business going through the object that holds the signer.
+ * What the router needs to answer a request. Settings and balance live outside
+ * the keyring on purpose: the keyring's job is key material, and neither a
+ * preferences read nor a public balance query has any business going through the
+ * object that holds the signer.
  */
 export interface KeyringServices {
   readonly keyring: Keyring;
   readonly settings: SettingsStore;
+  readonly balance: BalanceService;
 }
 
 /** Every request the popup can send. Discriminated by `type`. */
@@ -38,6 +41,7 @@ export type KeyringRequest =
   | { readonly type: 'unlock'; readonly password: string }
   | { readonly type: 'lock' }
   | { readonly type: 'getAccounts' }
+  | { readonly type: 'getBalance' }
   | { readonly type: 'getSettings' }
   | { readonly type: 'setAutoLockMinutes'; readonly minutes: number }
   | { readonly type: 'sign'; readonly request: SignRequest };
@@ -56,6 +60,8 @@ export interface KeyringResponseData {
   unlock: KeyringState;
   lock: KeyringState;
   getAccounts: readonly VaultAccount[];
+  /** The active token's balance, in base units — see {@link Balance}. */
+  getBalance: Balance;
   getSettings: WalletSettings;
   setAutoLockMinutes: WalletSettings;
   sign: unknown;
@@ -84,7 +90,7 @@ function assertNever(request: never): never {
  * a well-formed reply.
  */
 export async function handleKeyringRequest(
-  { keyring, settings }: KeyringServices,
+  { keyring, settings, balance }: KeyringServices,
   request: KeyringRequest,
 ): Promise<KeyringResponse> {
   try {
@@ -104,6 +110,15 @@ export async function handleKeyringRequest(
         return { ok: true, data: await keyring.lock() };
       case 'getAccounts':
         return { ok: true, data: await keyring.getAccounts() };
+      case 'getBalance': {
+        // The background owns whose balance this is: the popup asks "my balance"
+        // and never gets to name an address, so it can't query an arbitrary one.
+        const [account] = await keyring.getAccounts();
+        if (!account) {
+          throw new Error('no account to query a balance for');
+        }
+        return { ok: true, data: await balance.getBalance(account.address) };
+      }
       case 'getSettings':
         return { ok: true, data: await settings.load() };
       case 'setAutoLockMinutes': {
