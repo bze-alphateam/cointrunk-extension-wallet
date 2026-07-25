@@ -35,6 +35,8 @@
     "vitest": "^4.1.10"
   },
   "dependencies": {
+    "@cosmjs/crypto": "^0.39.0",
+    "@cosmjs/proto-signing": "^0.39.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8"
   }

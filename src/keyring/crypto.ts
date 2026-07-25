@@ -9,7 +9,7 @@
  * keyring knowing any crypto details.
  */
 
-import type { EncryptedVault } from './vault';
+import type { EncryptedVault, VaultAccount } from './vault';
 
 /** A signing request payload. Real fields (chain message, sign-doc) arrive in Epic 3. */
 export interface SignRequest {
@@ -27,10 +27,20 @@ export interface Signer {
 }
 
 /**
- * Turns a persisted vault + password into an in-memory signer. Decryption proves
- * the password via the AES-GCM authentication tag and rejects on a wrong password
- * or tampered blob — there is no separate stored password hash.
+ * The two directions of vault encryption, injected into the keyring so it never
+ * does crypto itself.
+ *
+ * `encrypt` turns a freshly generated or imported mnemonic into the persistable
+ * blob (BUS-15 / BUS-16 account setup); `decrypt` turns a persisted vault back
+ * into an in-memory signer. Decryption proves the password via the AES-GCM
+ * authentication tag and rejects on a wrong password or tampered blob — there is
+ * no separate stored password hash.
  */
 export interface VaultCrypto {
+  encrypt(
+    mnemonic: string,
+    password: string,
+    accounts: readonly VaultAccount[],
+  ): Promise<EncryptedVault>;
   decrypt(vault: EncryptedVault, password: string): Promise<Signer>;
 }
