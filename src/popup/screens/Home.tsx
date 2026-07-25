@@ -1,10 +1,15 @@
 /**
- * The wallet's main screen, shown while unlocked: the account address, an
- * explicit Lock button, and a way into settings. Balances and transactions
- * arrive in later epics.
+ * The wallet's main screen, shown while unlocked: the active token balance, the
+ * account address, an explicit Lock button, and a way into settings.
+ *
+ * The balance is fetched on mount. Because the popup mounts fresh every time it
+ * opens, that is exactly "refresh on popup open" (BUS-19) with no extra plumbing.
+ * Transactions arrive in later tickets.
  */
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import type { Balance } from '../../chain/balance';
+import { ACTIVE_TOKEN, formatTokenAmount } from '../../chain/token';
 import type { KeyringState } from '../../keyring/keyring';
 import { request } from '../keyringClient';
 
@@ -22,6 +27,25 @@ function shortenAddress(address: string): string {
 export function Home({ state, onLocked, onOpenSettings }: HomeProps) {
   const [account] = state.accounts;
   const [error, setError] = useState<string | null>(null);
+  const [balance, setBalance] = useState<Balance | null>(null);
+  const [balanceError, setBalanceError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    request({ type: 'getBalance' })
+      .then((loaded) => {
+        if (cancelled) return;
+        setBalance(loaded);
+        setBalanceError(null);
+      })
+      .catch((cause: unknown) => {
+        if (cancelled) return;
+        setBalanceError(cause instanceof Error ? cause.message : 'Could not load balance.');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function lock() {
     try {
@@ -34,6 +58,20 @@ export function Home({ state, onLocked, onOpenSettings }: HomeProps) {
   return (
     <section className="screen">
       <h1 className="screen__title">{account?.label ?? 'Wallet'}</h1>
+
+      <div className="balance">
+        {balanceError ? (
+          <p className="balance__error">{balanceError}</p>
+        ) : balance ? (
+          <p className="balance__amount">
+            {formatTokenAmount(balance.amount, ACTIVE_TOKEN.decimals)}
+            <span className="balance__denom">{ACTIVE_TOKEN.displayDenom}</span>
+          </p>
+        ) : (
+          <p className="balance__loading">Loading balance…</p>
+        )}
+      </div>
+
       {account ? (
         <p className="address" title={account.address}>
           {shortenAddress(account.address)}

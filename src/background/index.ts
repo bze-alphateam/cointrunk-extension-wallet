@@ -13,6 +13,7 @@
  * Keep this file side-effect-light and register listeners synchronously.
  */
 
+import { UnavailableBalanceService } from '../chain/balance';
 import { AutoLock, chromeAlarmScheduler } from '../keyring/autolock';
 import { Keyring } from '../keyring/keyring';
 import { handleKeyringRequest, type KeyringRequest } from '../keyring/messages';
@@ -26,6 +27,9 @@ import { webCryptoVaultCrypto } from '../keyring/vault-crypto';
 const keyring = new Keyring(new ChromeVaultStore(), webCryptoVaultCrypto);
 const settings = new ChromeSettingsStore();
 const autoLock = new AutoLock(keyring, settings, chromeAlarmScheduler);
+// Placeholder until the data layer (Epic 4) wires a chain-backed balance query;
+// today it rejects, so the popup shows its "balance unavailable" state (BUS-19).
+const balance = new UnavailableBalanceService();
 
 // Popup ↔ background message bridge. `handleKeyringRequest` never throws, and
 // returning `true` keeps the message channel open for the async `sendResponse`.
@@ -35,7 +39,7 @@ const autoLock = new AutoLock(keyring, settings, chromeAlarmScheduler);
 // it clears the alarm. Reconciling after the fact means unlock arms the timer
 // and lock disarms it without either code path knowing the auto-lock exists.
 chrome.runtime.onMessage.addListener((message: KeyringRequest, _sender, sendResponse) => {
-  handleKeyringRequest({ keyring, settings }, message)
+  handleKeyringRequest({ keyring, settings, balance }, message)
     .then(async (response) => {
       await autoLock.sync();
       return response;
