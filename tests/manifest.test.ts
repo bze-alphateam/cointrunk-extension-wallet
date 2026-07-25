@@ -4,7 +4,10 @@ import manifest from '../manifest.json';
 // Every permission the manifest requests must be listed here AND justified in
 // the README "Permissions" section. Adding one without documenting it is a
 // store-review risk, so the suite fails until both places agree.
-const DOCUMENTED_PERMISSIONS: string[] = [];
+const DOCUMENTED_PERMISSIONS: string[] = [
+  // Auto-lock on inactivity (BUS-18) — see the README "Permissions" table.
+  'alarms',
+];
 
 describe('MV3 manifest invariants', () => {
   it('declares Manifest V3 with a name and a numeric version', () => {

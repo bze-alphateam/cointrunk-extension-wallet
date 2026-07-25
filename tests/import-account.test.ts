@@ -14,6 +14,7 @@ import {
 } from '../src/keyring/account';
 import { Keyring } from '../src/keyring/keyring';
 import { handleKeyringRequest } from '../src/keyring/messages';
+import { services } from './support/services';
 import { sanitizeVault, type VaultStore } from '../src/keyring/storage';
 import { decryptMnemonic, webCryptoVaultCrypto } from '../src/keyring/vault-crypto';
 import type { EncryptedVault } from '../src/keyring/vault';
@@ -210,7 +211,7 @@ describe('keyring.importAccount (BUS-16)', () => {
 describe('importAccount over the message API (BUS-16)', () => {
   it('answers with non-secret state only — no mnemonic comes back', async () => {
     const { keyring } = newKeyring();
-    const response = await handleKeyringRequest(keyring, {
+    const response = await handleKeyringRequest(services(keyring), {
       type: 'importAccount',
       mnemonic: VALID_24,
       password: PASSWORD,
@@ -225,7 +226,7 @@ describe('importAccount over the message API (BUS-16)', () => {
   it('surfaces a validation failure as a specific, secret-free error response', async () => {
     const { keyring } = newKeyring();
     expect(
-      await handleKeyringRequest(keyring, {
+      await handleKeyringRequest(services(keyring), {
         type: 'importAccount',
         mnemonic: BAD_CHECKSUM,
         password: PASSWORD,
