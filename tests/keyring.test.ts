@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { Signer, VaultCrypto } from '../src/keyring/crypto';
 import { Keyring } from '../src/keyring/keyring';
 import { handleKeyringRequest, type KeyringRequest } from '../src/keyring/messages';
+import { services } from './support/services';
 import { ChromeVaultStore, VAULT_STORAGE_KEY, type VaultStore } from '../src/keyring/storage';
 import type { EncryptedVault } from '../src/keyring/vault';
 
@@ -226,7 +227,7 @@ describe('service-worker teardown', () => {
 describe('handleKeyringRequest', () => {
   it('answers getState', async () => {
     const keyring = new Keyring(new MemoryStore(VAULT), okCrypto);
-    expect(await handleKeyringRequest(keyring, { type: 'getState' })).toEqual({
+    expect(await handleKeyringRequest(services(keyring), { type: 'getState' })).toEqual({
       ok: true,
       data: { status: 'locked', accounts: VAULT.accounts },
     });
@@ -234,16 +235,19 @@ describe('handleKeyringRequest', () => {
 
   it('answers unlock and lock', async () => {
     const keyring = new Keyring(new MemoryStore(VAULT), okCrypto);
-    const unlocked = await handleKeyringRequest(keyring, { type: 'unlock', password: 'pw' });
+    const unlocked = await handleKeyringRequest(services(keyring), {
+      type: 'unlock',
+      password: 'pw',
+    });
     expect(unlocked).toEqual({ ok: true, data: { status: 'unlocked', accounts: VAULT.accounts } });
 
-    const locked = await handleKeyringRequest(keyring, { type: 'lock' });
+    const locked = await handleKeyringRequest(services(keyring), { type: 'lock' });
     expect(locked).toEqual({ ok: true, data: { status: 'locked', accounts: VAULT.accounts } });
   });
 
   it('answers getAccounts', async () => {
     const keyring = new Keyring(new MemoryStore(VAULT), okCrypto);
-    expect(await handleKeyringRequest(keyring, { type: 'getAccounts' })).toEqual({
+    expect(await handleKeyringRequest(services(keyring), { type: 'getAccounts' })).toEqual({
       ok: true,
       data: VAULT.accounts,
     });
@@ -251,7 +255,9 @@ describe('handleKeyringRequest', () => {
 
   it('reports a failed unlock as a non-throwing error response', async () => {
     const keyring = new Keyring(new MemoryStore(VAULT), rejectCrypto);
-    expect(await handleKeyringRequest(keyring, { type: 'unlock', password: 'bad' })).toEqual({
+    expect(
+      await handleKeyringRequest(services(keyring), { type: 'unlock', password: 'bad' }),
+    ).toEqual({
       ok: false,
       error: 'bad password',
     });
@@ -259,7 +265,7 @@ describe('handleKeyringRequest', () => {
 
   it('reports the locked guard when signing while locked', async () => {
     const keyring = new Keyring(new MemoryStore(VAULT), okCrypto);
-    expect(await handleKeyringRequest(keyring, { type: 'sign', request: {} })).toEqual({
+    expect(await handleKeyringRequest(services(keyring), { type: 'sign', request: {} })).toEqual({
       ok: false,
       error: 'locked',
     });
@@ -267,7 +273,7 @@ describe('handleKeyringRequest', () => {
 
   it('rejects an unknown request type', async () => {
     const keyring = new Keyring(new MemoryStore(VAULT), okCrypto);
-    const response = await handleKeyringRequest(keyring, {
+    const response = await handleKeyringRequest(services(keyring), {
       type: 'bogus',
     } as unknown as KeyringRequest);
     expect(response).toEqual({ ok: false, error: 'unknown keyring request: {"type":"bogus"}' });

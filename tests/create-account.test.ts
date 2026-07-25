@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import { Keyring } from '../src/keyring/keyring';
 import { handleKeyringRequest } from '../src/keyring/messages';
+import { services } from './support/services';
 import { sanitizeVault, type VaultStore } from '../src/keyring/storage';
 import { decryptMnemonic, webCryptoVaultCrypto } from '../src/keyring/vault-crypto';
 import type { EncryptedVault } from '../src/keyring/vault';
@@ -111,7 +112,7 @@ describe('keyring.createAccount (BUS-15)', () => {
 describe('createAccount over the message API (BUS-15)', () => {
   it('answers with the mnemonic for the one-time backup screen', async () => {
     const { keyring } = newKeyring();
-    const response = await handleKeyringRequest(keyring, {
+    const response = await handleKeyringRequest(services(keyring), {
       type: 'createAccount',
       password: PASSWORD,
     });
@@ -125,11 +126,11 @@ describe('createAccount over the message API (BUS-15)', () => {
 
   it('has no request that can re-read the mnemonic afterwards', async () => {
     const { keyring } = newKeyring();
-    await handleKeyringRequest(keyring, { type: 'createAccount', password: PASSWORD });
+    await handleKeyringRequest(services(keyring), { type: 'createAccount', password: PASSWORD });
 
     // The remaining responses are non-secret: state + account metadata only.
-    const state = await handleKeyringRequest(keyring, { type: 'getState' });
-    const accounts = await handleKeyringRequest(keyring, { type: 'getAccounts' });
+    const state = await handleKeyringRequest(services(keyring), { type: 'getState' });
+    const accounts = await handleKeyringRequest(services(keyring), { type: 'getAccounts' });
     expect(JSON.stringify(state)).not.toContain('mnemonic');
     expect(JSON.stringify(accounts)).not.toContain('mnemonic');
     // The keyring exposes no reveal/export surface at all.
@@ -142,7 +143,7 @@ describe('createAccount over the message API (BUS-15)', () => {
     const { keyring } = newKeyring();
     await keyring.createAccount(PASSWORD);
     expect(
-      await handleKeyringRequest(keyring, { type: 'createAccount', password: PASSWORD }),
+      await handleKeyringRequest(services(keyring), { type: 'createAccount', password: PASSWORD }),
     ).toEqual({ ok: false, error: 'a wallet already exists' });
   });
 });

@@ -35,11 +35,16 @@ assets are copied as-is, so the icons at `public/icons/*` end up at
 ## Permissions
 
 The extension requests the **minimal permission set** needed at each stage.
-Right now the skeleton needs none, so `permissions` in `manifest.json` is empty.
-Because `manifest.json` cannot carry inline comments, every permission added
-later must be justified here (what it's for) as it is introduced.
+Because `manifest.json` cannot carry inline comments, every permission must be
+justified here (what it's for) as it is introduced; `tests/manifest.test.ts`
+fails if the manifest and this list disagree.
 
-Current permissions: _none._
+| Permission | Why it's needed                                                                                                                                                                                                                   |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `alarms`   | Auto-lock on inactivity (BUS-18). An MV3 service worker is evicted after ~30 s idle, taking any `setTimeout` with it, so a timer-based auto-lock would never fire. `chrome.alarms` is owned by the browser and survives eviction. |
+
+Note that `chrome.storage.local` — where the encrypted vault lives — needs **no**
+permission for an extension's own storage area, so it does not appear above.
 
 ## Requirements
 
@@ -75,9 +80,11 @@ watch build with hot-reload while iterating.
 
 Unit tests run with [Vitest](https://vitest.dev/) (`vitest.config.ts`, plain
 Node environment — the extension build plugins are not involved). Tests live in
-`tests/*.test.ts`; run them with `pnpm test`. The suite currently smoke-tests
-the MV3 manifest invariants (manifest version, entry points, and that every
-requested permission is documented — see [Permissions](#permissions)).
+`tests/*.test.ts`; run them with `pnpm test`. The suite covers the MV3 manifest
+invariants (manifest version, entry points, and that every requested permission
+is documented — see [Permissions](#permissions)), the chain constants, and the
+keyring: vault encryption, account generation and import, lock/unlock and
+auto-lock.
 
 ## CI
 
