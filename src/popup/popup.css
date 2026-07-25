@@ -105,6 +105,37 @@ body {
   color: var(--ct-accent);
 }
 
+/* --- receive / QR ---------------------------------------------------------- */
+
+.qr {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--ct-surface);
+}
+
+/* White card behind the code: a QR must stay dark-on-light to scan, so it does
+   not follow the popup's dark theme. */
+.qr__code {
+  width: 180px;
+  height: 180px;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+/* --- action row ------------------------------------------------------------ */
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions .button {
+  flex: 1;
+  margin-top: 0;
+}
+
 /* --- balance --------------------------------------------------------------- */
 
 .balance {
