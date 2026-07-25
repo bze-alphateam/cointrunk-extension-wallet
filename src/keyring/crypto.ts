@@ -4,8 +4,9 @@
  * The keyring never does crypto itself — it holds an injected {@link VaultCrypto}
  * and calls {@link VaultCrypto.decrypt} to turn the persisted {@link EncryptedVault}
  * plus the user password into an in-memory {@link Signer}. This keeps the state
- * container testable and lets BUS-17 drop in the real Argon2id + AES-256-GCM
- * implementation without touching keyring logic.
+ * container testable; the concrete Argon2id + AES-256-GCM implementation lives
+ * in `./vault-crypto` (`webCryptoVaultCrypto`) and is injected without the
+ * keyring knowing any crypto details.
  */
 
 import type { EncryptedVault } from './vault';
@@ -33,14 +34,3 @@ export interface Signer {
 export interface VaultCrypto {
   decrypt(vault: EncryptedVault, password: string): Promise<Signer>;
 }
-
-/**
- * BUS-17 placeholder. Until the encryption routine lands, decryption is
- * unavailable, so any unlock attempt rejects. The keyring stays fully usable in
- * its locked/uninitialized states (state, accounts) with this stub in place.
- */
-export const unavailableCrypto: VaultCrypto = {
-  decrypt() {
-    return Promise.reject(new Error('encryption routine not implemented yet (BUS-17)'));
-  },
-};

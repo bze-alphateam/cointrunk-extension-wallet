@@ -13,15 +13,15 @@
  * Keep this file side-effect-light and register listeners synchronously.
  */
 
-import { unavailableCrypto } from '../keyring/crypto';
 import { Keyring } from '../keyring/keyring';
 import { handleKeyringRequest, type KeyringRequest } from '../keyring/messages';
 import { ChromeVaultStore } from '../keyring/storage';
+import { webCryptoVaultCrypto } from '../keyring/vault-crypto';
 
-// The decryption routine (BUS-17) is not wired up yet, so unlock is unavailable;
-// state and account queries work fully. Swap `unavailableCrypto` for the real
-// implementation when BUS-17 lands.
-const keyring = new Keyring(new ChromeVaultStore(), unavailableCrypto);
+// Argon2id + AES-256-GCM encryption at rest (BUS-17). `decrypt` proves the
+// password via the GCM auth tag and unlocks the keyring; state and account
+// queries work whether locked or unlocked.
+const keyring = new Keyring(new ChromeVaultStore(), webCryptoVaultCrypto);
 
 // Popup ↔ background message bridge. `handleKeyringRequest` never throws, and
 // returning `true` keeps the message channel open for the async `sendResponse`.
