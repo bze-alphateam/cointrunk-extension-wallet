@@ -51,6 +51,15 @@ chrome.alarms.onAlarm.addListener((alarm) => {
   void autoLock.onAlarm(alarm.name);
 });
 
+// The OS screen locked or the machine went to sleep ('locked'): an unambiguous
+// "user has stepped away", so lock the wallet immediately regardless of how much
+// inactivity timeout remains (BUS-50). After locking, sync() cancels the now
+// stale auto-lock alarm — the same reconciliation the message listener does.
+// 'idle' and 'active' don't lock; the chrome.alarms timeout owns input inactivity.
+chrome.idle.onStateChanged.addListener((state) => {
+  void autoLock.onIdleStateChanged(state).then((locked) => (locked ? autoLock.sync() : undefined));
+});
+
 // Fired once when the extension is installed or updated (and on Chrome update).
 chrome.runtime.onInstalled.addListener((details) => {
   console.log(`[CoinTrunk] service worker installed (reason: ${details.reason})`);
