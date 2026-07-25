@@ -136,6 +136,52 @@ body {
   margin-top: 0;
 }
 
+/* --- send review ----------------------------------------------------------- */
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--ct-border);
+  border-radius: 8px;
+  background: var(--ct-surface);
+}
+
+.review__row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.review__row--total {
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ct-border);
+  font-weight: 600;
+}
+
+.review__label {
+  flex: none;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ct-muted);
+}
+
+.review__value {
+  margin: 0;
+  font-size: 0.8125rem;
+  text-align: right;
+  word-break: break-word;
+}
+
+.review__value--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+}
+
 /* --- balance --------------------------------------------------------------- */
 
 .balance {

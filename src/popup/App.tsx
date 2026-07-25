@@ -15,12 +15,13 @@ import { CreateWallet } from './screens/CreateWallet';
 import { Home } from './screens/Home';
 import { ImportWallet } from './screens/ImportWallet';
 import { Receive } from './screens/Receive';
+import { Send } from './screens/Send';
 import { Settings } from './screens/Settings';
 import { Unlock } from './screens/Unlock';
 import { Welcome } from './screens/Welcome';
 
 /** Which screen the user has navigated to; `null` = follow the keyring status. */
-type Route = 'create' | 'import' | 'settings' | 'receive' | null;
+type Route = 'create' | 'import' | 'settings' | 'receive' | 'send' | null;
 
 export function App() {
   const [state, setState] = useState<KeyringState | null>(null);
@@ -71,6 +72,14 @@ export function App() {
     );
   }
 
+  if (route === 'send' && account) {
+    return (
+      <main className="app">
+        <Send onClose={closeRoute} />
+      </main>
+    );
+  }
+
   if (route === 'create') {
     return (
       <main className="app">
@@ -105,6 +114,7 @@ export function App() {
         <Home
           state={state}
           onLocked={adopt}
+          onSend={() => setRoute('send')}
           onReceive={() => setRoute('receive')}
           onOpenSettings={() => setRoute('settings')}
         />
