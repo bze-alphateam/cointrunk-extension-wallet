@@ -7,6 +7,8 @@ import manifest from '../manifest.json';
 const DOCUMENTED_PERMISSIONS: string[] = [
   // Auto-lock on inactivity (BUS-18) — see the README "Permissions" table.
   'alarms',
+  // Lock on OS screen lock / sleep (BUS-50) — see the README "Permissions" table.
+  'idle',
 ];
 
 describe('MV3 manifest invariants', () => {

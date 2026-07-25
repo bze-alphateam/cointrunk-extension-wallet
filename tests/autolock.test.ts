@@ -202,6 +202,68 @@ describe('AutoLock.onAlarm (BUS-18)', () => {
   });
 });
 
+// --- OS screen lock / sleep (BUS-50) ----------------------------------------
+
+describe('AutoLock.onIdleStateChanged (BUS-50)', () => {
+  it("locks an unlocked wallet when the OS screen locks ('locked')", async () => {
+    const { keyring, autoLock } = await setUpWallet();
+    await keyring.unlock(PASSWORD);
+    expect((await keyring.getState()).status).toBe('unlocked');
+
+    expect(await autoLock.onIdleStateChanged('locked')).toBe(true);
+    expect((await keyring.getState()).status).toBe('locked');
+  });
+
+  it('clears the in-memory signer, so signing is refused after an OS lock', async () => {
+    const { keyring, autoLock } = await setUpWallet();
+    await keyring.unlock(PASSWORD);
+
+    await autoLock.onIdleStateChanged('locked');
+    await expect(keyring.sign({ payload: 'x' })).rejects.toThrow('locked');
+  });
+
+  it("leaves an unlocked wallet unlocked on 'idle' — that is the alarm's job", async () => {
+    const { keyring, autoLock } = await setUpWallet();
+    await keyring.unlock(PASSWORD);
+
+    expect(await autoLock.onIdleStateChanged('idle')).toBe(false);
+    expect((await keyring.getState()).status).toBe('unlocked');
+  });
+
+  it("leaves an unlocked wallet unlocked on 'active'", async () => {
+    const { keyring, autoLock } = await setUpWallet();
+    await keyring.unlock(PASSWORD);
+
+    expect(await autoLock.onIdleStateChanged('active')).toBe(false);
+    expect((await keyring.getState()).status).toBe('unlocked');
+  });
+
+  it('leaves the persisted vault intact and re-unlockable — an OS lock is not a wipe', async () => {
+    const { store, keyring, autoLock } = await setUpWallet();
+    await keyring.unlock(PASSWORD);
+    const before = JSON.stringify(store.vault);
+
+    await autoLock.onIdleStateChanged('locked');
+
+    expect(JSON.stringify(store.vault)).toBe(before);
+    expect((await keyring.unlock(PASSWORD)).status).toBe('unlocked');
+  });
+
+  it('cancels the pending inactivity alarm once locked this way, as the background reconciles', async () => {
+    const { keyring, autoLock, alarms } = await setUpWallet();
+    await keyring.unlock(PASSWORD);
+    await autoLock.sync();
+    expect(alarms.pending).toBe(AUTO_LOCK_ALARM);
+
+    // The background listener locks on 'locked' then calls sync() to reconcile.
+    expect(await autoLock.onIdleStateChanged('locked')).toBe(true);
+    await autoLock.sync();
+
+    expect(alarms.cancelled).toContain(AUTO_LOCK_ALARM);
+    expect(alarms.pending).toBeNull();
+  });
+});
+
 // --- Unlock / lock over the message API -------------------------------------
 
 describe('unlock and lock (BUS-18)', () => {

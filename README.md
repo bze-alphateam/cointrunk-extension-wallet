@@ -39,9 +39,10 @@ Because `manifest.json` cannot carry inline comments, every permission must be
 justified here (what it's for) as it is introduced; `tests/manifest.test.ts`
 fails if the manifest and this list disagree.
 
-| Permission | Why it's needed                                                                                                                                                                                                                   |
-| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `alarms`   | Auto-lock on inactivity (BUS-18). An MV3 service worker is evicted after ~30 s idle, taking any `setTimeout` with it, so a timer-based auto-lock would never fire. `chrome.alarms` is owned by the browser and survives eviction. |
+| Permission | Why it's needed                                                                                                                                                                                                                                                                                                                   |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `alarms`   | Auto-lock on inactivity (BUS-18). An MV3 service worker is evicted after ~30 s idle, taking any `setTimeout` with it, so a timer-based auto-lock would never fire. `chrome.alarms` is owned by the browser and survives eviction.                                                                                                 |
+| `idle`     | Lock on OS screen lock / sleep (BUS-50). `chrome.idle.onStateChanged` reports when the OS screen locks (`'locked'`) — an unambiguous "user has stepped away" — so the wallet locks immediately instead of waiting out the inactivity timeout. Only `'locked'` locks; `'idle'` (input inactivity) is left to the `alarms` timeout. |
 
 Note that `chrome.storage.local` — where the encrypted vault lives — needs **no**
 permission for an extension's own storage area, so it does not appear above.

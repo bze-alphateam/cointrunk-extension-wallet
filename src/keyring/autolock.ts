@@ -87,4 +87,23 @@ export class AutoLock {
     await this.keyring.lock();
     return true;
   }
+
+  /**
+   * Lock immediately when the OS screen locks — an unambiguous "user has left"
+   * (BUS-50). This is a state machine over `chrome.idle` states, so it takes the
+   * state directly and stays testable without a browser, like {@link onAlarm}.
+   *
+   * Only `'locked'` (OS screen lock / sleep) locks the wallet. `'idle'` is mere
+   * input inactivity — that is the alarm's job, and locking on it would cut a
+   * configured 30-minute timeout short and surprise the user; `'active'` is a
+   * return to the machine. Returns whether it acted, matching `onAlarm`'s shape;
+   * the caller reconciles the now-stale alarm via {@link sync}.
+   */
+  async onIdleStateChanged(state: `${chrome.idle.IdleState}`): Promise<boolean> {
+    if (state !== 'locked') {
+      return false;
+    }
+    await this.keyring.lock();
+    return true;
+  }
 }
