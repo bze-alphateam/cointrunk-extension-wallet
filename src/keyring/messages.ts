@@ -11,6 +11,8 @@
  */
 
 import type { Balance, BalanceService } from '../chain/balance';
+import { validateRecipientAddress } from '../chain/address';
+import type { SendRequest, TransactionService, TxResult } from '../chain/tx';
 import type { SignRequest } from './crypto';
 import type { CreatedAccount, Keyring, KeyringState } from './keyring';
 import { assertValidAutoLockMinutes, type SettingsStore, type WalletSettings } from './settings';
@@ -26,6 +28,7 @@ export interface KeyringServices {
   readonly keyring: Keyring;
   readonly settings: SettingsStore;
   readonly balance: BalanceService;
+  readonly transactions: TransactionService;
 }
 
 /** Every request the popup can send. Discriminated by `type`. */
@@ -42,6 +45,7 @@ export type KeyringRequest =
   | { readonly type: 'lock' }
   | { readonly type: 'getAccounts' }
   | { readonly type: 'getBalance' }
+  | { readonly type: 'send'; readonly request: SendRequest }
   | { readonly type: 'getSettings' }
   | { readonly type: 'setAutoLockMinutes'; readonly minutes: number }
   | { readonly type: 'sign'; readonly request: SignRequest };
@@ -62,6 +66,8 @@ export interface KeyringResponseData {
   getAccounts: readonly VaultAccount[];
   /** The active token's balance, in base units — see {@link Balance}. */
   getBalance: Balance;
+  /** The broadcast result (tx hash) of a send — see {@link TxResult}. */
+  send: TxResult;
   getSettings: WalletSettings;
   setAutoLockMinutes: WalletSettings;
   sign: unknown;
@@ -90,7 +96,7 @@ function assertNever(request: never): never {
  * a well-formed reply.
  */
 export async function handleKeyringRequest(
-  { keyring, settings, balance }: KeyringServices,
+  { keyring, settings, balance, transactions }: KeyringServices,
   request: KeyringRequest,
 ): Promise<KeyringResponse> {
   try {
@@ -118,6 +124,26 @@ export async function handleKeyringRequest(
           throw new Error('no account to query a balance for');
         }
         return { ok: true, data: await balance.getBalance(account.address) };
+      }
+      case 'send': {
+        // Same trust boundary as getBalance: the background owns the sending
+        // address (the active account), so the popup can never spend from an
+        // arbitrary one. The recipient is re-validated here — the popup already
+        // validates it, but the background is the trust boundary — before the
+        // request reaches the signer.
+        const [account] = await keyring.getAccounts();
+        if (!account) {
+          throw new Error('no account to send from');
+        }
+        const toAddress = validateRecipientAddress(request.request.toAddress);
+        return {
+          ok: true,
+          data: await transactions.send({
+            from: account.address,
+            toAddress,
+            amount: request.request.amount,
+          }),
+        };
       }
       case 'getSettings':
         return { ok: true, data: await settings.load() };

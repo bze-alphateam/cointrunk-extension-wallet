@@ -4,6 +4,7 @@
  */
 
 import type { Balance, BalanceService } from '../../src/chain/balance';
+import type { SendParams, TransactionService, TxResult } from '../../src/chain/tx';
 import type { Keyring } from '../../src/keyring/keyring';
 import type { KeyringServices } from '../../src/keyring/messages';
 import {
@@ -43,11 +44,30 @@ export class FakeBalanceService implements BalanceService {
   };
 }
 
-/** Bundle a keyring with fresh settings and balance doubles for the router. */
+/**
+ * `TransactionService` double that records the params it was called with and
+ * returns a fixed result — or rejects, to exercise the send failure path.
+ */
+export class FakeTransactionService implements TransactionService {
+  lastParams: SendParams | null = null;
+
+  constructor(private readonly result: TxResult | Error = { hash: 'DEADBEEF' }) {}
+
+  send = async (params: SendParams): Promise<TxResult> => {
+    this.lastParams = params;
+    if (this.result instanceof Error) {
+      throw this.result;
+    }
+    return this.result;
+  };
+}
+
+/** Bundle a keyring with fresh settings, balance and transaction doubles. */
 export function services(
   keyring: Keyring,
   settings = new MemorySettingsStore(),
   balance = new FakeBalanceService(),
+  transactions = new FakeTransactionService(),
 ): KeyringServices {
-  return { keyring, settings, balance };
+  return { keyring, settings, balance, transactions };
 }
