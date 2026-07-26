@@ -13,7 +13,8 @@
  * Keep this file side-effect-light and register listeners synchronously.
  */
 
-import { UnavailableBalanceService } from '../chain/balance';
+import { BankBalanceService } from '../chain/bank';
+import { ChainClient } from '../chain/client';
 import { UnavailableFeeEligibilityService } from '../chain/fees';
 import { UnavailableTransactionService } from '../chain/tx';
 import { AutoLock, chromeAlarmScheduler } from '../keyring/autolock';
@@ -29,9 +30,13 @@ import { webCryptoVaultCrypto } from '../keyring/vault-crypto';
 const keyring = new Keyring(new ChromeVaultStore(), webCryptoVaultCrypto);
 const settings = new ChromeSettingsStore();
 const autoLock = new AutoLock(keyring, settings, chromeAlarmScheduler);
-// Placeholder until the data layer (Epic 4) wires a chain-backed balance query;
-// today it rejects, so the popup shows its "balance unavailable" state (BUS-19).
-const balance = new UnavailableBalanceService();
+// One chain client shared by every chain-backed service: BeeZee mainnet
+// endpoints with automatic fallback (BUS-24). Recreated on every worker
+// respawn like everything here — it holds no state between requests.
+const chainClient = new ChainClient();
+// Chain-backed balance query over the bank module (BUS-25), replacing the
+// BUS-19 placeholder. Nothing above the BalanceService seam changed.
+const balance = new BankBalanceService(chainClient);
 // Likewise a placeholder for signing & broadcasting a send (BUS-22): it rejects
 // until Epic 4 wires the RPC client, so the send flow exercises its failure
 // state. The full form → review → confirm path above the seam is real.
