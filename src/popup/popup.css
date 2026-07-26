@@ -1,12 +1,46 @@
+/*
+ * Static token fallbacks for the pre-JS paint: the `default` theme, mirrored
+ * from src/theme/themes.ts. main.tsx re-applies the selected theme/mode at
+ * runtime by overriding these same --ct-* variables (BUS-29). Keep the values
+ * here in sync with the DEFAULT_THEME palette.
+ */
 :root {
   color-scheme: light dark;
+  /* default theme — dark palette */
   --ct-bg: #0f172a;
-  --ct-fg: #f1f5f9;
-  --ct-accent: #2dd4bf;
-  --ct-muted: #94a3b8;
   --ct-surface: #1e293b;
+  --ct-fg: #f1f5f9;
+  --ct-muted: #94a3b8;
   --ct-border: #334155;
+  --ct-accent: #2dd4bf;
+  --ct-accent-fg: #04231f;
+  --ct-secondary: #64748b;
   --ct-danger: #fca5a5;
+  /* type / spacing / radii — mode-independent */
+  --ct-font: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --ct-space-xs: 4px;
+  --ct-space-sm: 8px;
+  --ct-space-md: 12px;
+  --ct-space-lg: 16px;
+  --ct-space-xl: 24px;
+  --ct-radius-sm: 6px;
+  --ct-radius-md: 10px;
+  --ct-radius-lg: 14px;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    /* default theme — light palette */
+    --ct-bg: #f8fafc;
+    --ct-surface: #ffffff;
+    --ct-fg: #0f172a;
+    --ct-muted: #64748b;
+    --ct-border: #e2e8f0;
+    --ct-accent: #0d9488;
+    --ct-accent-fg: #ffffff;
+    --ct-secondary: #475569;
+    --ct-danger: #dc2626;
+  }
 }
 
 * {
@@ -20,12 +54,7 @@ body {
 
 body {
   width: 320px;
-  font-family:
-    system-ui,
-    -apple-system,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--ct-font);
   background: var(--ct-bg);
   color: var(--ct-fg);
 }
@@ -33,8 +62,8 @@ body {
 .app {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  padding: 20px 16px;
+  gap: var(--ct-space-sm);
+  padding: 20px var(--ct-space-lg);
 }
 
 /* --- screens --------------------------------------------------------------- */
@@ -103,6 +132,105 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ct-accent);
+}
+
+/* --- receive / QR ---------------------------------------------------------- */
+
+.qr {
+  display: flex;
+  justify-content: center;
+  padding: 12px;
+  border-radius: 10px;
+  background: var(--ct-surface);
+}
+
+/* White card behind the code: a QR must stay dark-on-light to scan, so it does
+   not follow the popup's dark theme. */
+.qr__code {
+  width: 180px;
+  height: 180px;
+  border-radius: 6px;
+  background: #ffffff;
+}
+
+/* --- action row ------------------------------------------------------------ */
+
+.actions {
+  display: flex;
+  gap: 8px;
+}
+
+.actions .button {
+  flex: 1;
+  margin-top: 0;
+}
+
+/* --- send review ----------------------------------------------------------- */
+
+.review {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--ct-border);
+  border-radius: 8px;
+  background: var(--ct-surface);
+}
+
+.review__row {
+  display: flex;
+  gap: 12px;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.review__row--total {
+  margin-top: 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--ct-border);
+  font-weight: 600;
+}
+
+.review__label {
+  flex: none;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--ct-muted);
+}
+
+.review__value {
+  margin: 0;
+  font-size: 0.8125rem;
+  text-align: right;
+  word-break: break-word;
+}
+
+.review__value--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  word-break: break-all;
+}
+
+/* --- send result (success / failure) --------------------------------------- */
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.result__title {
+  margin: 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
+.result__title--success {
+  color: var(--ct-accent);
+}
+
+.result__title--error {
+  color: var(--ct-danger);
 }
 
 /* --- balance --------------------------------------------------------------- */
@@ -209,7 +337,7 @@ body {
   border: 0;
   border-radius: 8px;
   background: var(--ct-accent);
-  color: #04231f;
+  color: var(--ct-accent-fg);
   font: inherit;
   font-size: 0.875rem;
   font-weight: 600;

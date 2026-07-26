@@ -11,9 +11,15 @@ importers:
       '@cosmjs/crypto':
         specifier: ^0.39.0
         version: 0.39.0
+      '@cosmjs/encoding':
+        specifier: ^0.39.0
+        version: 0.39.0
       '@cosmjs/proto-signing':
         specifier: ^0.39.0
         version: 0.39.0
+      qr:
+        specifier: ^0.6.0
+        version: 0.6.0
       react:
         specifier: ^19.2.8
         version: 19.2.8
@@ -844,6 +850,10 @@ packages:
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
+
+  qr@0.6.0:
+    resolution: {integrity: sha512-P23VoX7SipHALdiIYG+D+LT/6n22dNKwV92FAb3d+Nlki/5WisSsfLt0UDFz2XEBtuwrECTznvu+chKKFCSYhA==}
+    engines: {node: '>= 20.19.0'}
 
   react-dom@19.2.8:
     resolution: {integrity: sha512-rVprimfGBG3DR+Tq0IQG2DT5PxKth1WIGDmj5yPmlzr4YBe7uyE+Du4oVqTDXZSHGGGXRtTJEGSSePyQCMBglQ==}
@@ -1788,6 +1798,8 @@ snapshots:
   prettier@3.9.6: {}
 
   punycode@2.3.1: {}
+
+  qr@0.6.0: {}
 
   react-dom@19.2.8(react@19.2.8):
     dependencies:

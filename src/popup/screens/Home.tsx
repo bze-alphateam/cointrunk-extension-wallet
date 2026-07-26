@@ -20,6 +20,8 @@ const COPIED_FEEDBACK_MS = 1500;
 interface HomeProps {
   readonly state: KeyringState;
   readonly onLocked: (state: KeyringState) => void;
+  readonly onSend: () => void;
+  readonly onReceive: () => void;
   readonly onOpenSettings: () => void;
 }
 
@@ -28,7 +30,7 @@ function shortenAddress(address: string): string {
   return address.length > 20 ? `${address.slice(0, 10)}…${address.slice(-6)}` : address;
 }
 
-export function Home({ state, onLocked, onOpenSettings }: HomeProps) {
+export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: HomeProps) {
   const [account] = state.accounts;
   const [error, setError] = useState<string | null>(null);
   const [balance, setBalance] = useState<Balance | null>(null);
@@ -110,6 +112,17 @@ export function Home({ state, onLocked, onOpenSettings }: HomeProps) {
         </button>
       ) : (
         <p className="screen__body">No account yet.</p>
+      )}
+
+      {account && (
+        <div className="actions">
+          <button className="button button--secondary" type="button" onClick={onSend}>
+            Send
+          </button>
+          <button className="button button--secondary" type="button" onClick={onReceive}>
+            Receive
+          </button>
+        </div>
       )}
 
       {error && <p className="form__error">{error}</p>}

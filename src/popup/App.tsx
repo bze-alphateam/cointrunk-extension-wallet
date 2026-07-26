@@ -14,12 +14,14 @@ import { request } from './keyringClient';
 import { CreateWallet } from './screens/CreateWallet';
 import { Home } from './screens/Home';
 import { ImportWallet } from './screens/ImportWallet';
+import { Receive } from './screens/Receive';
+import { Send } from './screens/Send';
 import { Settings } from './screens/Settings';
 import { Unlock } from './screens/Unlock';
 import { Welcome } from './screens/Welcome';
 
 /** Which screen the user has navigated to; `null` = follow the keyring status. */
-type Route = 'create' | 'import' | 'settings' | null;
+type Route = 'create' | 'import' | 'settings' | 'receive' | 'send' | null;
 
 export function App() {
   const [state, setState] = useState<KeyringState | null>(null);
@@ -58,6 +60,26 @@ export function App() {
 
   const closeRoute = () => setRoute(null);
 
+  // Sub-routes reachable only from the unlocked Home screen, so an account
+  // exists; the guard keeps them type-safe and falls back to status routing.
+  const [account] = state.accounts;
+
+  if (route === 'receive' && account) {
+    return (
+      <main className="app">
+        <Receive account={account} onClose={closeRoute} />
+      </main>
+    );
+  }
+
+  if (route === 'send' && account) {
+    return (
+      <main className="app">
+        <Send onClose={closeRoute} />
+      </main>
+    );
+  }
+
   if (route === 'create') {
     return (
       <main className="app">
@@ -89,7 +111,13 @@ export function App() {
       ) : state.status === 'locked' ? (
         <Unlock account={state.accounts[0]} onUnlocked={adopt} />
       ) : (
-        <Home state={state} onLocked={adopt} onOpenSettings={() => setRoute('settings')} />
+        <Home
+          state={state}
+          onLocked={adopt}
+          onSend={() => setRoute('send')}
+          onReceive={() => setRoute('receive')}
+          onOpenSettings={() => setRoute('settings')}
+        />
       )}
     </main>
   );

@@ -6,10 +6,9 @@
  * as settings do (see `messages.ts`): the popup asks `getBalance`, the background
  * resolves the active account and delegates to a {@link BalanceService}.
  *
- * The concrete, network-backed service is the data layer's job (Epic 4). This
- * module defines the contract and ships {@link UnavailableBalanceService} as the
- * placeholder so the whole path — request routing, loading and error states — is
- * wired and testable now, and Epic 4 only swaps in the real query.
+ * This module defines the contract; the chain-backed implementation is
+ * {@link ../chain/bank.BankBalanceService} (BUS-25), which replaced the
+ * placeholder this module shipped with while the path was UI-only.
  */
 
 /**
@@ -25,17 +24,4 @@ export interface Balance {
 /** Fetches the active token balance for an address from the chain bank module. */
 export interface BalanceService {
   getBalance(address: string): Promise<Balance>;
-}
-
-/**
- * Placeholder used until the data layer (Epic 4) provides a chain-backed service.
- * It rejects so the popup exercises its error state rather than showing a
- * fabricated number; the message string is user-readable, not a stack trace.
- */
-export class UnavailableBalanceService implements BalanceService {
-  // The address is irrelevant until there is a chain to query, so it is omitted
-  // here; the method still satisfies `BalanceService.getBalance(address)`.
-  async getBalance(): Promise<Balance> {
-    throw new Error('Balance is unavailable right now.');
-  }
 }
