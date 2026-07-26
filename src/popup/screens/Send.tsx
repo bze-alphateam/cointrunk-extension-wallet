@@ -17,9 +17,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { validateRecipientAddress } from '../../chain/address';
 import type { Balance } from '../../chain/balance';
+import { txExplorerUrl } from '../../chain/explorer';
 import { ACTIVE_TOKEN, formatTokenAmount, parseTokenAmount } from '../../chain/token';
 import { DEFAULT_SEND_FEE, type TxResult } from '../../chain/tx';
 import { request } from '../keyringClient';
+import { useClipboardCopy } from '../useCopy';
 
 interface SendProps {
   readonly onClose: () => void;
@@ -53,6 +55,12 @@ export function Send({ onClose }: SendProps) {
 
   const [result, setResult] = useState<TxResult | null>(null);
   const [sendError, setSendError] = useState<string | null>(null);
+
+  const hashCopy = useClipboardCopy();
+
+  // The failure-path hook for Epic 7: re-check whether the account can pay fees.
+  const [feeCheck, setFeeCheck] = useState<string | null>(null);
+  const [feeChecking, setFeeChecking] = useState(false);
 
   // The amount is validated against this balance, so load it up front — the same
   // "refresh on popup open" query the Home screen uses.
@@ -110,6 +118,26 @@ export function Send({ onClose }: SendProps) {
       setSendError(cause instanceof Error ? cause.message : 'The transaction could not be sent.');
     } finally {
       setStep('result');
+    }
+  }
+
+  /** Re-check fee-token eligibility from the failure state (Epic 7 hook). */
+  async function recheckFeeEligibility() {
+    setFeeCheck(null);
+    setFeeChecking(true);
+    try {
+      const eligibility = await request({ type: 'checkFeeEligibility' });
+      setFeeCheck(
+        eligibility.eligible
+          ? (eligibility.reason ?? `You can cover the network fee — try the send again.`)
+          : (eligibility.reason ?? `You cannot currently cover the network fee.`),
+      );
+    } catch (cause) {
+      setFeeCheck(
+        cause instanceof Error ? cause.message : 'Could not check fee-token eligibility.',
+      );
+    } finally {
+      setFeeChecking(false);
     }
   }
 
@@ -208,21 +236,60 @@ export function Send({ onClose }: SendProps) {
 
       {step === 'result' &&
         (sendError ? (
-          <>
+          <div className="result">
+            <p className="result__title result__title--error">Transaction failed</p>
             <p className="form__error">{sendError}</p>
+
+            {/* Epic 7 hook: a common cause is not being able to cover the fee in
+                an accepted fee token, so offer a re-check right where it fails. */}
+            <button
+              className="button button--secondary"
+              type="button"
+              onClick={() => void recheckFeeEligibility()}
+              disabled={feeChecking}
+            >
+              {feeChecking ? 'Checking…' : 'Check fee-token eligibility'}
+            </button>
+            {feeCheck && <p className="form__hint">{feeCheck}</p>}
+
             <button className="button" type="button" onClick={() => setStep('form')}>
               Back
             </button>
-          </>
+          </div>
         ) : (
-          <>
-            <p className="form__note">Transaction sent.</p>
-            <p className="screen__body">Transaction hash</p>
-            <p className="address__value">{result?.hash}</p>
+          <div className="result">
+            <p className="result__title result__title--success">Transaction sent</p>
+            <p className="screen__body">Your {displayDenom} is on its way.</p>
+
+            {result?.hash && (
+              <>
+                <button
+                  type="button"
+                  className="address"
+                  onClick={() => void hashCopy.copy(result.hash)}
+                  title={`${result.hash}\nClick to copy`}
+                  aria-label={hashCopy.copied ? 'Transaction hash copied' : 'Copy transaction hash'}
+                >
+                  <span className="address__value">{result.hash}</span>
+                  <span className="address__action" aria-hidden="true">
+                    {hashCopy.copied ? 'Copied' : 'Copy'}
+                  </span>
+                </button>
+                <a
+                  className="button button--link"
+                  href={txExplorerUrl(result.hash)}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  View on block explorer
+                </a>
+              </>
+            )}
+
             <button className="button" type="button" onClick={onClose}>
               Done
             </button>
-          </>
+          </div>
         ))}
     </section>
   );

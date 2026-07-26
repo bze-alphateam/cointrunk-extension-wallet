@@ -78,3 +78,11 @@ export const DEFAULT_SEND_GAS = '200000';
  * wired in Epic 4; this keeps the review step honest and complete until then.
  */
 export const DEFAULT_SEND_FEE_AMOUNT = '2000';
+
+/**
+ * Block-explorer base URL for BeeZee mainnet. The public BZE apps
+ * (`bze-frontend-apps` `ui-kit`) link a transaction at `<base>/tx/<hash>`, with
+ * the mainnet base `https://explorer.getbze.com/bze`. Kept here so the single
+ * explorer the wallet points at is one documented constant (BUS-23).
+ */
+export const BZE_EXPLORER_BASE_URL = 'https://explorer.getbze.com/bze';
