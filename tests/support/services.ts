@@ -11,6 +11,7 @@ import type { KeyringServices } from '../../src/keyring/messages';
 import {
   assertValidAutoLockMinutes,
   DEFAULT_SETTINGS,
+  normalizeActiveTokenDenom,
   type SettingsStore,
   type WalletSettings,
 } from '../../src/keyring/settings';
@@ -23,7 +24,12 @@ export class MemorySettingsStore implements SettingsStore {
 
   save = async (settings: WalletSettings): Promise<void> => {
     assertValidAutoLockMinutes(settings.autoLockMinutes);
-    this.settings = { autoLockMinutes: settings.autoLockMinutes };
+    // Rebuild field by field, like the chrome store, so a caller's extra keys
+    // never ride along and the denom is normalised on the way in.
+    this.settings = {
+      autoLockMinutes: settings.autoLockMinutes,
+      activeTokenDenom: normalizeActiveTokenDenom(settings.activeTokenDenom),
+    };
   };
 }
 
@@ -33,8 +39,12 @@ export class MemorySettingsStore implements SettingsStore {
  */
 export class FakeBalanceService implements BalanceService {
   queriedAddress: string | null = null;
+  allQueriedAddress: string | null = null;
 
-  constructor(private readonly result: Balance | Error = { denom: 'ubze', amount: '0' }) {}
+  constructor(
+    private readonly result: Balance | Error = { denom: 'ubze', amount: '0' },
+    private readonly all: Balance[] | Error = [],
+  ) {}
 
   getBalance = async (address: string): Promise<Balance> => {
     this.queriedAddress = address;
@@ -42,6 +52,14 @@ export class FakeBalanceService implements BalanceService {
       throw this.result;
     }
     return this.result;
+  };
+
+  getAllBalances = async (address: string): Promise<Balance[]> => {
+    this.allQueriedAddress = address;
+    if (this.all instanceof Error) {
+      throw this.all;
+    }
+    return this.all;
   };
 }
 

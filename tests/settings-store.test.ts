@@ -1,6 +1,8 @@
 /**
  * `ChromeSettingsStore` over a fake `chrome.storage.local` (BUS-18): the
- * settings blob is separate from the vault and carries only known fields.
+ * settings blob is separate from the vault and carries only known fields. The
+ * sticky active-token denom (BUS-34) rides alongside the auto-lock timeout, each
+ * field recovering independently from corrupt storage.
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
@@ -35,32 +37,39 @@ afterEach(() => {
 });
 
 describe('ChromeSettingsStore (BUS-18)', () => {
-  it('returns the default timeout when nothing has been stored', async () => {
+  it('returns the defaults when nothing has been stored', async () => {
     installFakeChromeStorage();
     expect(await new ChromeSettingsStore().load()).toEqual({
       autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
+      activeTokenDenom: null,
     });
   });
 
   it('round-trips a saved timeout', async () => {
     installFakeChromeStorage();
     const store = new ChromeSettingsStore();
-    await store.save({ autoLockMinutes: 7 });
-    expect(await store.load()).toEqual({ autoLockMinutes: 7 });
+    await store.save({ autoLockMinutes: 7, activeTokenDenom: null });
+    expect(await store.load()).toEqual({ autoLockMinutes: 7, activeTokenDenom: null });
   });
 
   it('writes only known fields — anything attached to the object is dropped', async () => {
     const backing = installFakeChromeStorage();
-    const leaky = { autoLockMinutes: 7, password: 'hunter2' } as unknown as WalletSettings;
+    const leaky = {
+      autoLockMinutes: 7,
+      activeTokenDenom: null,
+      password: 'hunter2',
+    } as unknown as WalletSettings;
 
     await new ChromeSettingsStore().save(leaky);
 
-    expect(backing[SETTINGS_STORAGE_KEY]).toEqual({ autoLockMinutes: 7 });
+    expect(backing[SETTINGS_STORAGE_KEY]).toEqual({ autoLockMinutes: 7, activeTokenDenom: null });
   });
 
   it('refuses to persist an invalid timeout', async () => {
     const backing = installFakeChromeStorage();
-    await expect(new ChromeSettingsStore().save({ autoLockMinutes: 0 })).rejects.toThrow();
+    await expect(
+      new ChromeSettingsStore().save({ autoLockMinutes: 0, activeTokenDenom: null }),
+    ).rejects.toThrow();
     expect(backing[SETTINGS_STORAGE_KEY]).toBeUndefined();
   });
 
@@ -68,18 +77,47 @@ describe('ChromeSettingsStore (BUS-18)', () => {
     const backing = installFakeChromeStorage();
     backing[VAULT_STORAGE_KEY] = { version: 1, ciphertext: 'blob' };
 
-    await new ChromeSettingsStore().save({ autoLockMinutes: 30 });
+    await new ChromeSettingsStore().save({ autoLockMinutes: 30, activeTokenDenom: null });
 
     expect(SETTINGS_STORAGE_KEY).not.toBe(VAULT_STORAGE_KEY);
     expect(backing[VAULT_STORAGE_KEY]).toEqual({ version: 1, ciphertext: 'blob' });
   });
 
-  it('recovers to the default if the stored settings are corrupt', async () => {
+  it('recovers to the defaults if the stored settings are corrupt', async () => {
     const backing = installFakeChromeStorage();
     backing[SETTINGS_STORAGE_KEY] = { autoLockMinutes: 'whenever' };
 
     expect(await new ChromeSettingsStore().load()).toEqual({
       autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
+      activeTokenDenom: null,
+    });
+  });
+
+  describe('sticky active-token denom (BUS-34)', () => {
+    it('round-trips a saved active-token denom', async () => {
+      installFakeChromeStorage();
+      const store = new ChromeSettingsStore();
+      await store.save({ autoLockMinutes: 15, activeTokenDenom: 'ubze' });
+      expect(await store.load()).toEqual({ autoLockMinutes: 15, activeTokenDenom: 'ubze' });
+    });
+
+    it('normalises an empty or malformed stored denom to null', async () => {
+      const backing = installFakeChromeStorage();
+      backing[SETTINGS_STORAGE_KEY] = { autoLockMinutes: 15, activeTokenDenom: '' };
+      expect((await new ChromeSettingsStore().load()).activeTokenDenom).toBeNull();
+
+      backing[SETTINGS_STORAGE_KEY] = { autoLockMinutes: 15, activeTokenDenom: 42 };
+      expect((await new ChromeSettingsStore().load()).activeTokenDenom).toBeNull();
+    });
+
+    it('recovers each field independently — a corrupt timeout keeps the denom', async () => {
+      const backing = installFakeChromeStorage();
+      backing[SETTINGS_STORAGE_KEY] = { autoLockMinutes: 'whenever', activeTokenDenom: 'ubze' };
+
+      expect(await new ChromeSettingsStore().load()).toEqual({
+        autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
+        activeTokenDenom: 'ubze',
+      });
     });
   });
 });
