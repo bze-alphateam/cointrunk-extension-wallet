@@ -84,10 +84,9 @@ describe('getHeldTokens request (BUS-37)', () => {
       { denom: 'ubze', amount: '1' },
     ]);
 
-    const response = await handleKeyringRequest(
-      services(keyring, undefined, balance),
-      { type: 'getHeldTokens' },
-    );
+    const response = await handleKeyringRequest(services(keyring, undefined, balance), {
+      type: 'getHeldTokens',
+    });
 
     expect(response).toEqual({ ok: true, data: [] });
     expect(balance.allQueriedAddress).toBeNull();
@@ -97,10 +96,9 @@ describe('getHeldTokens request (BUS-37)', () => {
     const { keyring } = await keyringWithAccount();
     const balance = new FakeBalanceService({ denom: 'ubze', amount: '0' }, []);
 
-    const response = await handleKeyringRequest(
-      services(keyring, undefined, balance),
-      { type: 'getHeldTokens' },
-    );
+    const response = await handleKeyringRequest(services(keyring, undefined, balance), {
+      type: 'getHeldTokens',
+    });
 
     expect(response).toEqual({ ok: true, data: [] });
   });
@@ -112,10 +110,9 @@ describe('getHeldTokens request (BUS-37)', () => {
       new Error('Balances are unavailable right now.'),
     );
 
-    const response = await handleKeyringRequest(
-      services(keyring, undefined, balance),
-      { type: 'getHeldTokens' },
-    );
+    const response = await handleKeyringRequest(services(keyring, undefined, balance), {
+      type: 'getHeldTokens',
+    });
 
     expect(response).toEqual({ ok: false, error: 'Balances are unavailable right now.' });
   });

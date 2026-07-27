@@ -384,7 +384,10 @@ describe('token-switching toggle over the message API (BUS-36)', () => {
       type: 'getSettings',
     });
 
-    expect(response).toEqual({ ok: true, data: expect.objectContaining({ tokenSwitchingEnabled: false }) });
+    expect(response).toEqual({
+      ok: true,
+      data: expect.objectContaining({ tokenSwitchingEnabled: false }),
+    });
   });
 
   it('persists the flag and returns the updated settings', async () => {
@@ -395,7 +398,10 @@ describe('token-switching toggle over the message API (BUS-36)', () => {
       enabled: true,
     });
 
-    expect(response).toEqual({ ok: true, data: expect.objectContaining({ tokenSwitchingEnabled: true }) });
+    expect(response).toEqual({
+      ok: true,
+      data: expect.objectContaining({ tokenSwitchingEnabled: true }),
+    });
     expect(settings.settings.tokenSwitchingEnabled).toBe(true);
   });
 

@@ -100,28 +100,33 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
     };
   }, []);
 
-  // Check on open whether the active token can pay fees (BUS-39). It runs after
-  // the core balance load and never blocks it: a fee warning is an FYI layered
-  // on top of a fully working wallet.
+  /**
+   * Re-check whether the active token can pay fees and refresh the warning
+   * (BUS-38/39). One of the two BUS-40 re-check points (the other is a failed tx,
+   * on the Send screen); both funnel through the same `checkFeeEligibility`. A
+   * failed check leaves the current warning untouched — never invent one from an
+   * error — and never blocks anything.
+   */
+  async function refreshFeeWarning() {
+    try {
+      const eligibility = await request({ type: 'checkFeeEligibility' });
+      setFeeWarning(eligibility.eligible ? null : (eligibility.reason ?? FEE_INELIGIBLE_REASON));
+    } catch {
+      // Keep whatever warning state we already have.
+    }
+  }
+
+  // Check on open (BUS-39), after the core balance load — a fee warning is an FYI
+  // layered on top of a fully working wallet, never a gate in front of it.
   useEffect(() => {
-    let cancelled = false;
-    request({ type: 'checkFeeEligibility' })
-      .then((eligibility) => {
-        if (cancelled) return;
-        setFeeWarning(eligibility.eligible ? null : (eligibility.reason ?? FEE_INELIGIBLE_REASON));
-      })
-      .catch(() => {
-        // A failed check leaves no warning — never invent one from an error.
-      });
-    return () => {
-      cancelled = true;
-    };
+    void refreshFeeWarning();
   }, []);
 
   /**
-   * Switch the active token (BUS-37): persist the choice and re-skin the wallet
-   * to it immediately. The eligibility re-check that a switch triggers is wired
-   * in BUS-40.
+   * Switch the active token (BUS-37): persist the choice, re-skin the wallet to
+   * it immediately, and re-check fee eligibility for the new token (BUS-40). A
+   * fresh check un-dismisses the warning, so switching to a low-liquidity token
+   * re-surfaces it even if the previous one was dismissed.
    */
   async function switchToken(denom: string) {
     if (denom === activeDenom || switching) return;
@@ -130,6 +135,8 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
       const active = await request({ type: 'setActiveToken', denom });
       setActiveDenom(active.denom);
       applyActiveSkin(active.denom);
+      setFeeWarningDismissed(false);
+      await refreshFeeWarning();
     } catch {
       // A failed switch leaves the previous active token in place.
     } finally {

@@ -102,7 +102,9 @@ describe('ChromeSettingsStore (BUS-18)', () => {
       installFakeChromeStorage();
       const store = new ChromeSettingsStore();
       await store.save(settings({ autoLockMinutes: 15, activeTokenDenom: 'ubze' }));
-      expect(await store.load()).toEqual(settings({ autoLockMinutes: 15, activeTokenDenom: 'ubze' }));
+      expect(await store.load()).toEqual(
+        settings({ autoLockMinutes: 15, activeTokenDenom: 'ubze' }),
+      );
     });
 
     it('normalises an empty or malformed stored denom to null', async () => {
