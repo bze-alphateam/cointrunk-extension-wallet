@@ -1,20 +1,14 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App';
-import { applyTheme, preferredMode } from '../theme/apply';
-import { DEFAULT_THEME_ID } from '../theme/themes';
+import { resolveActiveSkin, startSkin } from './activeSkin';
 import './popup.css';
 
-// Theme the UI before first paint: the default skin in the holder's preferred
-// colour mode. A later branding ticket picks the theme id from the active
-// token; re-selecting is just another applyTheme call (BUS-29).
-applyTheme(DEFAULT_THEME_ID, preferredMode());
-
-// Follow the OS/browser light↔dark switch while the popup is open, keeping the
-// same theme and only swapping the mode's palette.
-matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (event) => {
-  applyTheme(DEFAULT_THEME_ID, event.matches ? 'dark' : 'light');
-});
+// Paint the default skin before first render (no unstyled frame) and follow the
+// OS light↔dark switch, then re-skin to the active token once the background
+// resolves it: the BZE skin for BZE, the default skin otherwise (BUS-34).
+startSkin();
+void resolveActiveSkin();
 
 const container = document.getElementById('root');
 if (!container) {

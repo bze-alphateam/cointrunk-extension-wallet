@@ -20,6 +20,9 @@ import type { Radii, Spacing, Theme, Typography } from './tokens';
 /** The id of the neutral fallback theme; guaranteed to be present in {@link THEMES}. */
 export const DEFAULT_THEME_ID = 'default';
 
+/** The id of the native BZE brand theme — the skin for the BZE active token. */
+export const BZE_THEME_ID = 'bze';
+
 const SYSTEM_FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 // Shared non-colour scales — the layout the popup stylesheet was authored
@@ -61,7 +64,7 @@ const DEFAULT_THEME: Theme = {
 
 /** BeeZee gold — the native BZE brand skin. */
 const BZE_THEME: Theme = {
-  id: 'bze',
+  id: BZE_THEME_ID,
   name: 'BeeZee',
   dark: {
     background: '#12100b',

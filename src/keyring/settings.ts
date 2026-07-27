@@ -28,10 +28,19 @@ export const MAX_AUTO_LOCK_MINUTES = 24 * 60;
 export interface WalletSettings {
   /** Inactivity timeout, in minutes, after which the wallet auto-locks. */
   readonly autoLockMinutes: number;
+  /**
+   * The sticky active token's base denom, or `null` before one is chosen
+   * (BUS-34). The first token the account is seen holding is captured here and
+   * then stays put — the wallet reopens skinned to it, and it only changes when
+   * the user deliberately switches (Epic 6). `null` means "no token yet", which
+   * the UI renders as the neutral default skin.
+   */
+  readonly activeTokenDenom: string | null;
 }
 
 export const DEFAULT_SETTINGS: WalletSettings = {
   autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
+  activeTokenDenom: null,
 };
 
 /** Abstract settings persistence, so the auto-lock can be tested in memory. */
@@ -57,19 +66,34 @@ export function assertValidAutoLockMinutes(minutes: number): void {
 }
 
 /**
+ * Coerce a stored/candidate active-token denom to the persisted shape: a
+ * non-empty string, or `null` for anything else (absent, empty, or the wrong
+ * type). A corrupt denom therefore degrades to "no token yet" (the neutral
+ * default skin) rather than skinning the wallet to a garbage denom.
+ */
+export function normalizeActiveTokenDenom(candidate: unknown): string | null {
+  return typeof candidate === 'string' && candidate.length > 0 ? candidate : null;
+}
+
+/**
  * Reconstruct settings from whatever is on disk, field by field, falling back to
- * the default for anything missing or malformed. Storage written by an older (or
- * corrupted) version can therefore never leave the wallet without a timeout —
- * the fail-safe direction is "auto-lock still happens".
+ * the default for anything missing or malformed. Each field recovers on its own,
+ * so a corrupt timeout can never wipe the sticky active token (or vice versa):
+ * the fail-safe direction is "auto-lock still happens" and "skin stays neutral".
  */
 export function withDefaults(stored: unknown): WalletSettings {
-  const candidate = (stored as Partial<WalletSettings> | null | undefined)?.autoLockMinutes;
+  const raw = (stored as Partial<WalletSettings> | null | undefined) ?? {};
+  let autoLockMinutes: number;
   try {
-    assertValidAutoLockMinutes(candidate as number);
-    return { autoLockMinutes: candidate as number };
+    assertValidAutoLockMinutes(raw.autoLockMinutes as number);
+    autoLockMinutes = raw.autoLockMinutes as number;
   } catch {
-    return DEFAULT_SETTINGS;
+    autoLockMinutes = DEFAULT_AUTO_LOCK_MINUTES;
   }
+  return {
+    autoLockMinutes,
+    activeTokenDenom: normalizeActiveTokenDenom(raw.activeTokenDenom),
+  };
 }
 
 /** `SettingsStore` backed by `chrome.storage.local`. */
@@ -84,7 +108,10 @@ export class ChromeSettingsStore implements SettingsStore {
     await chrome.storage.local.set({
       // Rebuilt field by field, like the vault store: nothing a caller attached
       // to the object rides along into storage.
-      [SETTINGS_STORAGE_KEY]: { autoLockMinutes: settings.autoLockMinutes },
+      [SETTINGS_STORAGE_KEY]: {
+        autoLockMinutes: settings.autoLockMinutes,
+        activeTokenDenom: normalizeActiveTokenDenom(settings.activeTokenDenom),
+      },
     });
   }
 }

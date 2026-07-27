@@ -117,6 +117,7 @@ describe('AutoLock.sync (BUS-18)', () => {
     const { keyring, autoLock, alarms } = await setUpWallet(
       new MemorySettingsStore({
         autoLockMinutes: 3,
+        activeTokenDenom: null,
       }),
     );
     await keyring.unlock(PASSWORD);
@@ -335,7 +336,10 @@ describe('settings over the message API (BUS-18)', () => {
 
     expect(
       await handleKeyringRequest(services(keyring, settings), { type: 'getSettings' }),
-    ).toEqual({ ok: true, data: { autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES } });
+    ).toEqual({
+      ok: true,
+      data: { autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES, activeTokenDenom: null },
+    });
   });
 
   it('persists a new timeout and applies it to the next arming', async () => {

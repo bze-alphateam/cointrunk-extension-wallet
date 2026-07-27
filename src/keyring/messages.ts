@@ -11,6 +11,7 @@
  */
 
 import type { Balance, BalanceService } from '../chain/balance';
+import { selectStickyActiveDenom, type ActiveTokenState } from '../chain/active-token-selection';
 import { validateRecipientAddress } from '../chain/address';
 import type { FeeEligibilityService, FeeTokenEligibility } from '../chain/fees';
 import type { SendRequest, TransactionService, TxResult } from '../chain/tx';
@@ -47,6 +48,7 @@ export type KeyringRequest =
   | { readonly type: 'lock' }
   | { readonly type: 'getAccounts' }
   | { readonly type: 'getBalance' }
+  | { readonly type: 'getActiveToken' }
   | { readonly type: 'send'; readonly request: SendRequest }
   | { readonly type: 'checkFeeEligibility' }
   | { readonly type: 'getSettings' }
@@ -69,6 +71,8 @@ export interface KeyringResponseData {
   getAccounts: readonly VaultAccount[];
   /** The active token's balance, in base units — see {@link Balance}. */
   getBalance: Balance;
+  /** The resolved sticky active token (denom or null) — see {@link ActiveTokenState}. */
+  getActiveToken: ActiveTokenState;
   /** The broadcast result (tx hash) of a send — see {@link TxResult}. */
   send: TxResult;
   /** Re-checked fee-token eligibility for the active account (Epic 7 hook). */
@@ -130,6 +134,26 @@ export async function handleKeyringRequest(
         }
         return { ok: true, data: await balance.getBalance(account.address) };
       }
+      case 'getActiveToken': {
+        // Resolve the sticky active token (BUS-34). If one is already chosen, it
+        // stays put — no chain read needed. Otherwise the first denom the account
+        // is seen holding becomes the active token and is persisted, so the choice
+        // sticks across reopens. A brand-new account (no account, or holding
+        // nothing) resolves to `null` → the neutral default skin.
+        const stored = await settings.load();
+        let denom = stored.activeTokenDenom;
+        if (denom === null) {
+          const [account] = await keyring.getAccounts();
+          if (account) {
+            const held = (await balance.getAllBalances(account.address)).map((b) => b.denom);
+            denom = selectStickyActiveDenom(null, held);
+            if (denom !== null) {
+              await settings.save({ ...stored, activeTokenDenom: denom });
+            }
+          }
+        }
+        return { ok: true, data: { denom } };
+      }
       case 'send': {
         // Same trust boundary as getBalance: the background owns the sending
         // address (the active account), so the popup can never spend from an
@@ -163,7 +187,10 @@ export async function handleKeyringRequest(
         return { ok: true, data: await settings.load() };
       case 'setAutoLockMinutes': {
         assertValidAutoLockMinutes(request.minutes);
-        const updated: WalletSettings = { autoLockMinutes: request.minutes };
+        // Change only the timeout; keep every other setting (e.g. the sticky
+        // active token) as it was, rather than resetting the whole blob.
+        const current = await settings.load();
+        const updated: WalletSettings = { ...current, autoLockMinutes: request.minutes };
         await settings.save(updated);
         return { ok: true, data: updated };
       }

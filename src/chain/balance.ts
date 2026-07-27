@@ -21,7 +21,14 @@ export interface Balance {
   readonly amount: string;
 }
 
-/** Fetches the active token balance for an address from the chain bank module. */
+/** Fetches an address's token balances from the chain bank module. */
 export interface BalanceService {
+  /** The active token's balance for the address (zero if the account holds none). */
   getBalance(address: string): Promise<Balance>;
+  /**
+   * Every denom the address holds a positive balance of, in bank order. Used to
+   * pick the sticky active token (BUS-34); the bank module omits zero balances,
+   * so this is exactly "the tokens the account has received and still holds".
+   */
+  getAllBalances(address: string): Promise<Balance[]>;
 }
