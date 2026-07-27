@@ -59,8 +59,30 @@ describe('keyring.createAccount (BUS-15)', () => {
     const persisted = JSON.stringify(store.vault);
     expect(persisted).not.toContain(mnemonic);
     expect(persisted).not.toContain(PASSWORD);
-    // Not even a single mnemonic word survives in the blob.
+    // Not even a single mnemonic word survives in the blob. Caveat: a handful of
+    // BIP39 words are also (prefixes of) the vault's own JSON field names —
+    // "version", "salt", "account"→"accounts", "address", "label" — so a `"word`
+    // match there is the field name, always present and legitimate, not a leak.
+    // Skip words that prefix a field name (a real leak of such a word is
+    // indistinguishable from the field anyway, and the whitelist assertion below
+    // already proves no stray field rode along). Any other match is a real leak.
+    const vaultFieldNames = [
+      'version',
+      'kdf',
+      'algo',
+      'hash',
+      'iterations',
+      'salt',
+      'cipher',
+      'iv',
+      'ciphertext',
+      'accounts',
+      'address',
+      'hdPath',
+      'label',
+    ];
     for (const word of new Set(mnemonic.split(' '))) {
+      if (vaultFieldNames.some((field) => field.startsWith(word))) continue;
       expect(persisted).not.toContain(`"${word}`);
     }
     expect(Object.keys(store.vault ?? {}).sort()).toEqual([
