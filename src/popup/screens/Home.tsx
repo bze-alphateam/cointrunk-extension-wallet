@@ -10,12 +10,14 @@
 
 import { useEffect, useRef, useState } from 'react';
 import type { Balance } from '../../chain/balance';
+import { FEE_INELIGIBLE_REASON } from '../../chain/fees';
 import { ACTIVE_TOKEN, formatTokenAmount } from '../../chain/token';
 import type { HeldToken } from '../../keyring/messages';
 import type { KeyringState } from '../../keyring/keyring';
 import { applyActiveSkin } from '../activeSkin';
 import { copyText } from '../clipboard';
 import { request } from '../keyringClient';
+import { FeeWarning } from './FeeWarning';
 import { TokenSwitcher } from './TokenSwitcher';
 
 /** How long the "Copied" confirmation stays up after a successful copy. */
@@ -47,6 +49,11 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
   const [tokens, setTokens] = useState<readonly HeldToken[]>([]);
   const [activeDenom, setActiveDenom] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
+
+  // Fee-token warning (BUS-39): the reason the active token can't pay fees, or
+  // null when it can (or the check hasn't run). Dismissible for the session.
+  const [feeWarning, setFeeWarning] = useState<string | null>(null);
+  const [feeWarningDismissed, setFeeWarningDismissed] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,6 +95,24 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
         // Keep the switcher hidden; the core screen still works.
       }
     })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Check on open whether the active token can pay fees (BUS-39). It runs after
+  // the core balance load and never blocks it: a fee warning is an FYI layered
+  // on top of a fully working wallet.
+  useEffect(() => {
+    let cancelled = false;
+    request({ type: 'checkFeeEligibility' })
+      .then((eligibility) => {
+        if (cancelled) return;
+        setFeeWarning(eligibility.eligible ? null : (eligibility.reason ?? FEE_INELIGIBLE_REASON));
+      })
+      .catch(() => {
+        // A failed check leaves no warning — never invent one from an error.
+      });
     return () => {
       cancelled = true;
     };
@@ -180,6 +205,10 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
             Receive
           </button>
         </div>
+      )}
+
+      {feeWarning && !feeWarningDismissed && (
+        <FeeWarning reason={feeWarning} onDismiss={() => setFeeWarningDismissed(true)} />
       )}
 
       {switchingEnabled && (

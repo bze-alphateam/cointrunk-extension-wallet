@@ -468,3 +468,43 @@ body {
   font-variant-numeric: tabular-nums;
   color: var(--ct-muted);
 }
+
+/* --- fee-token warning (BUS-39) -------------------------------------------- */
+
+/* Calm, not alarming: a soft amber accent on the neutral surface, muted text —
+   an FYI, not the danger-red used for errors. */
+.fee-warning {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px 10px;
+  border: 1px solid var(--ct-border);
+  border-left: 3px solid #d9a441;
+  border-radius: 8px;
+  background: var(--ct-surface);
+}
+
+.fee-warning__text {
+  flex: 1;
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ct-muted);
+}
+
+.fee-warning__dismiss {
+  flex: none;
+  margin: -2px -2px 0 0;
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--ct-muted);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.fee-warning__dismiss:focus-visible {
+  outline: 2px solid var(--ct-accent);
+  outline-offset: 1px;
+}
