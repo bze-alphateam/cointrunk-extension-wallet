@@ -17,7 +17,12 @@ import type { FeeEligibilityService, FeeTokenEligibility } from '../chain/fees';
 import type { SendRequest, TransactionService, TxResult } from '../chain/tx';
 import type { SignRequest } from './crypto';
 import type { CreatedAccount, Keyring, KeyringState } from './keyring';
-import { assertValidAutoLockMinutes, type SettingsStore, type WalletSettings } from './settings';
+import {
+  assertValidActiveTokenDenom,
+  assertValidAutoLockMinutes,
+  type SettingsStore,
+  type WalletSettings,
+} from './settings';
 import type { VaultAccount } from './vault';
 
 /**
@@ -49,6 +54,7 @@ export type KeyringRequest =
   | { readonly type: 'getAccounts' }
   | { readonly type: 'getBalance' }
   | { readonly type: 'getActiveToken' }
+  | { readonly type: 'setActiveToken'; readonly denom: string }
   | { readonly type: 'send'; readonly request: SendRequest }
   | { readonly type: 'checkFeeEligibility' }
   | { readonly type: 'getSettings' }
@@ -73,6 +79,8 @@ export interface KeyringResponseData {
   getBalance: Balance;
   /** The resolved sticky active token (denom or null) — see {@link ActiveTokenState}. */
   getActiveToken: ActiveTokenState;
+  /** The now-active token after a deliberate switch (its denom) — see {@link ActiveTokenState}. */
+  setActiveToken: ActiveTokenState;
   /** The broadcast result (tx hash) of a send — see {@link TxResult}. */
   send: TxResult;
   /** Re-checked fee-token eligibility for the active account (Epic 7 hook). */
@@ -153,6 +161,17 @@ export async function handleKeyringRequest(
           }
         }
         return { ok: true, data: { denom } };
+      }
+      case 'setActiveToken': {
+        // A deliberate user switch (Epic 6): persist the chosen denom as the new
+        // sticky active token, replacing whatever was chosen before. Only this
+        // path and the first-received bootstrap in `getActiveToken` ever write
+        // the active token, so the choice stays put until the next switch and
+        // survives reopen / lock-unlock (settings live outside the vault).
+        assertValidActiveTokenDenom(request.denom);
+        const current = await settings.load();
+        await settings.save({ ...current, activeTokenDenom: request.denom });
+        return { ok: true, data: { denom: request.denom } };
       }
       case 'send': {
         // Same trust boundary as getBalance: the background owns the sending

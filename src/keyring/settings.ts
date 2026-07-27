@@ -76,6 +76,19 @@ export function normalizeActiveTokenDenom(candidate: unknown): string | null {
 }
 
 /**
+ * Validate a denom the user is deliberately switching to (BUS-35). Unlike
+ * {@link normalizeActiveTokenDenom} — which quietly degrades a corrupt *stored*
+ * value to the neutral default — an explicit "make this the active token" write
+ * with no real denom is a caller bug, so it throws rather than silently doing
+ * nothing (the switcher would look like it worked while nothing changed).
+ */
+export function assertValidActiveTokenDenom(denom: unknown): asserts denom is string {
+  if (normalizeActiveTokenDenom(denom) === null) {
+    throw new Error('active token denom must be a non-empty string');
+  }
+}
+
+/**
  * Reconstruct settings from whatever is on disk, field by field, falling back to
  * the default for anything missing or malformed. Each field recovers on its own,
  * so a corrupt timeout can never wipe the sticky active token (or vice versa):
