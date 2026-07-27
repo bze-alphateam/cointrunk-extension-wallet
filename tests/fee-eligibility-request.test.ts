@@ -1,17 +1,23 @@
 /**
- * `checkFeeEligibility` routing (BUS-23): the failure-path hook for Epic 7. The
- * popup asks to re-check fee eligibility; the background resolves the active
- * account itself and delegates to the `FeeEligibilityService`. The popup never
- * names an address, matching the getBalance/send trust boundary.
+ * `checkFeeEligibility` routing (BUS-38): the popup asks to re-check whether the
+ * active token can pay fees; the background resolves the sticky active-token
+ * denom itself and delegates to the `FeeEligibilityService`. The popup never
+ * names a denom or an address, matching the getBalance/send trust boundary.
  */
 
 import { describe, expect, it } from 'vitest';
 import { Keyring } from '../src/keyring/keyring';
 import { handleKeyringRequest } from '../src/keyring/messages';
+import { DEFAULT_AUTO_LOCK_MINUTES } from '../src/keyring/settings';
 import { sanitizeVault, type VaultStore } from '../src/keyring/storage';
 import type { EncryptedVault } from '../src/keyring/vault';
 import { webCryptoVaultCrypto } from '../src/keyring/vault-crypto';
-import { FakeFeeEligibilityService, services } from './support/services';
+import {
+  FakeBalanceService,
+  FakeFeeEligibilityService,
+  MemorySettingsStore,
+  services,
+} from './support/services';
 
 const PASSWORD = 'correct horse battery staple';
 
@@ -26,31 +32,56 @@ class MemoryStore implements VaultStore {
   };
 }
 
-async function keyringWithAccount(): Promise<{ keyring: Keyring; address: string }> {
+async function keyringWithAccount(): Promise<Keyring> {
   const keyring = new Keyring(new MemoryStore(), webCryptoVaultCrypto);
-  const [account] = (await keyring.createAccount(PASSWORD)).state.accounts;
-  return { keyring, address: account!.address };
+  await keyring.createAccount(PASSWORD);
+  return keyring;
 }
 
-/** Build a services bundle overriding only the fee-eligibility double. */
-function withFeeService(keyring: Keyring, feeEligibility: FakeFeeEligibilityService) {
-  return services(keyring, undefined, undefined, undefined, feeEligibility);
+/** Build a services bundle overriding the settings, balance and fee doubles. */
+function withFeeService(
+  keyring: Keyring,
+  fee: FakeFeeEligibilityService,
+  settings = new MemorySettingsStore(),
+  balance = new FakeBalanceService(),
+) {
+  return services(keyring, settings, balance, undefined, fee);
 }
 
-describe('checkFeeEligibility request (BUS-23)', () => {
-  it('returns the eligibility, checked for the active account address', async () => {
-    const { keyring, address } = await keyringWithAccount();
-    const fee = new FakeFeeEligibilityService({ eligible: false, reason: 'Top up your BZE.' });
+describe('checkFeeEligibility request (BUS-38)', () => {
+  it('checks the sticky active token denom, not the account address', async () => {
+    const keyring = await keyringWithAccount();
+    const settings = new MemorySettingsStore({
+      autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
+      activeTokenDenom: 'factory/bze1abc/xyz',
+      tokenSwitchingEnabled: false,
+    });
+    const fee = new FakeFeeEligibilityService({ eligible: false, reason: 'Low liquidity.' });
 
-    const response = await handleKeyringRequest(withFeeService(keyring, fee), {
+    const response = await handleKeyringRequest(withFeeService(keyring, fee, settings), {
       type: 'checkFeeEligibility',
     });
 
-    expect(response).toEqual({ ok: true, data: { eligible: false, reason: 'Top up your BZE.' } });
-    expect(fee.checkedAddress).toBe(address);
+    expect(response).toEqual({ ok: true, data: { eligible: false, reason: 'Low liquidity.' } });
+    expect(fee.checkedDenom).toBe('factory/bze1abc/xyz');
   });
 
-  it('fails cleanly when there is no account — the service is never called', async () => {
+  it('adopts and checks the first held token when none is chosen yet', async () => {
+    const keyring = await keyringWithAccount();
+    const settings = new MemorySettingsStore();
+    const balance = new FakeBalanceService({ denom: 'ubze', amount: '0' }, [
+      { denom: 'ubze', amount: '1000000' },
+    ]);
+    const fee = new FakeFeeEligibilityService({ eligible: true });
+
+    await handleKeyringRequest(withFeeService(keyring, fee, settings, balance), {
+      type: 'checkFeeEligibility',
+    });
+
+    expect(fee.checkedDenom).toBe('ubze');
+  });
+
+  it('checks a null denom (eligible, nothing to warn on) when there is no account', async () => {
     const keyring = new Keyring(new MemoryStore(), webCryptoVaultCrypto);
     const fee = new FakeFeeEligibilityService({ eligible: true });
 
@@ -58,23 +89,23 @@ describe('checkFeeEligibility request (BUS-23)', () => {
       type: 'checkFeeEligibility',
     });
 
-    expect(response.ok).toBe(false);
-    expect(fee.checkedAddress).toBeNull();
+    expect(response).toEqual({ ok: true, data: { eligible: true } });
+    expect(fee.checkedDenom).toBeNull();
   });
 
-  it('surfaces the placeholder failure as the error envelope, not a throw', async () => {
-    const { keyring } = await keyringWithAccount();
-    const fee = new FakeFeeEligibilityService(
-      new Error('Fee-token eligibility checks arrive with alt-fee-token support.'),
-    );
+  it('surfaces a service failure as the error envelope, not a throw', async () => {
+    const keyring = await keyringWithAccount();
+    const settings = new MemorySettingsStore({
+      autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
+      activeTokenDenom: 'factory/bze1abc/xyz',
+      tokenSwitchingEnabled: false,
+    });
+    const fee = new FakeFeeEligibilityService(new Error('Liquidity is unavailable right now.'));
 
-    const response = await handleKeyringRequest(withFeeService(keyring, fee), {
+    const response = await handleKeyringRequest(withFeeService(keyring, fee, settings), {
       type: 'checkFeeEligibility',
     });
 
-    expect(response).toEqual({
-      ok: false,
-      error: 'Fee-token eligibility checks arrive with alt-fee-token support.',
-    });
+    expect(response).toEqual({ ok: false, error: 'Liquidity is unavailable right now.' });
   });
 });

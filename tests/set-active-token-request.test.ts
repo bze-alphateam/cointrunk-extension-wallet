@@ -52,6 +52,7 @@ describe('setActiveToken request (BUS-35)', () => {
     const settings = new MemorySettingsStore({
       autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
       activeTokenDenom: 'ubze',
+      tokenSwitchingEnabled: false,
     });
 
     await handleKeyringRequest(services(keyring, settings), {
@@ -108,6 +109,7 @@ describe('setActiveToken request (BUS-35)', () => {
     const settings = new MemorySettingsStore({
       autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
       activeTokenDenom: 'ubze',
+      tokenSwitchingEnabled: false,
     });
 
     const response = await handleKeyringRequest(services(keyring, settings), {

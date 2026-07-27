@@ -14,8 +14,9 @@
  */
 
 import { BankBalanceService } from '../chain/bank';
+import { CachedChainData } from '../chain/chain-data';
 import { ChainClient } from '../chain/client';
-import { UnavailableFeeEligibilityService } from '../chain/fees';
+import { LiquidityFeeEligibilityService } from '../chain/fees';
 import { UnavailableTransactionService } from '../chain/tx';
 import { AutoLock, chromeAlarmScheduler } from '../keyring/autolock';
 import { Keyring } from '../keyring/keyring';
@@ -37,13 +38,18 @@ const chainClient = new ChainClient();
 // Chain-backed balance query over the bank module (BUS-25), replacing the
 // BUS-19 placeholder. Nothing above the BalanceService seam changed.
 const balance = new BankBalanceService(chainClient);
+// The cached chain-read layer (BUS-28): token metadata, LP depth and the
+// governance threshold, each with its own TTL and a stale-but-usable fallback.
+// Shared by the fee-eligibility gate (and the token switcher's identities).
+const chainData = CachedChainData.fromClient(chainClient);
 // Likewise a placeholder for signing & broadcasting a send (BUS-22): it rejects
 // until Epic 4 wires the RPC client, so the send flow exercises its failure
 // state. The full form → review → confirm path above the seam is real.
 const transactions = new UnavailableTransactionService();
-// Placeholder for the BUS-23 failure-path hook: re-checking whether the account
-// can pay fees. Alt-fee-token support is Epic 7, which swaps in the real check.
-const feeEligibility = new UnavailableFeeEligibilityService();
+// The real fee-token eligibility check (BUS-38): is the active token's BZE-side
+// LP deep enough to pay fees with? Reads the cached depth + threshold; native
+// BZE is always eligible. Replaces the BUS-23 placeholder.
+const feeEligibility = new LiquidityFeeEligibilityService(chainData);
 
 // Popup ↔ background message bridge. `handleKeyringRequest` never throws, and
 // returning `true` keeps the message channel open for the async `sendResponse`.

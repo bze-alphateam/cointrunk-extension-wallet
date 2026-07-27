@@ -83,16 +83,18 @@ export class FakeTransactionService implements TransactionService {
 }
 
 /**
- * `FeeEligibilityService` double that records the address it was asked about and
- * returns a fixed eligibility — or rejects, to exercise the hook's error path.
+ * `FeeEligibilityService` double that records the active-token denom it was asked
+ * about and returns a fixed eligibility — or rejects, to exercise the error path.
+ * `checkedDenom` starts as `undefined` ("never called") to tell it apart from a
+ * genuine `null` denom (checked, but no active token).
  */
 export class FakeFeeEligibilityService implements FeeEligibilityService {
-  checkedAddress: string | null = null;
+  checkedDenom: string | null | undefined = undefined;
 
   constructor(private readonly result: FeeTokenEligibility | Error = { eligible: true }) {}
 
-  check = async (address: string): Promise<FeeTokenEligibility> => {
-    this.checkedAddress = address;
+  check = async (denom: string | null): Promise<FeeTokenEligibility> => {
+    this.checkedDenom = denom;
     if (this.result instanceof Error) {
       throw this.result;
     }

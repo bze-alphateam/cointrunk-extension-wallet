@@ -110,6 +110,37 @@ function assertNever(request: never): never {
 }
 
 /**
+ * Resolve the sticky active-token denom (BUS-34): the stored choice if there is
+ * one, else the first denom the account is seen holding — which is then
+ * persisted so the choice sticks across reopens. Returns `null` when there is no
+ * account or it holds nothing (the neutral default skin, no fee warning).
+ *
+ * Shared by `getActiveToken` (which reports the denom) and `checkFeeEligibility`
+ * (which feeds it to the fee gate), so both agree on what "the active token" is
+ * and neither lets the popup name an address or denom of its own.
+ */
+async function resolveActiveDenom(
+  keyring: Keyring,
+  settings: SettingsStore,
+  balance: BalanceService,
+): Promise<string | null> {
+  const stored = await settings.load();
+  if (stored.activeTokenDenom !== null) {
+    return stored.activeTokenDenom;
+  }
+  const [account] = await keyring.getAccounts();
+  if (!account) {
+    return null;
+  }
+  const held = (await balance.getAllBalances(account.address)).map((b) => b.denom);
+  const denom = selectStickyActiveDenom(null, held);
+  if (denom !== null) {
+    await settings.save({ ...stored, activeTokenDenom: denom });
+  }
+  return denom;
+}
+
+/**
  * Route a request to the keyring and wrap the outcome in a {@link KeyringResponse}.
  * Never throws: rejections become `{ ok: false, error }` so the popup always gets
  * a well-formed reply.
@@ -145,24 +176,9 @@ export async function handleKeyringRequest(
         return { ok: true, data: await balance.getBalance(account.address) };
       }
       case 'getActiveToken': {
-        // Resolve the sticky active token (BUS-34). If one is already chosen, it
-        // stays put — no chain read needed. Otherwise the first denom the account
-        // is seen holding becomes the active token and is persisted, so the choice
-        // sticks across reopens. A brand-new account (no account, or holding
-        // nothing) resolves to `null` → the neutral default skin.
-        const stored = await settings.load();
-        let denom = stored.activeTokenDenom;
-        if (denom === null) {
-          const [account] = await keyring.getAccounts();
-          if (account) {
-            const held = (await balance.getAllBalances(account.address)).map((b) => b.denom);
-            denom = selectStickyActiveDenom(null, held);
-            if (denom !== null) {
-              await settings.save({ ...stored, activeTokenDenom: denom });
-            }
-          }
-        }
-        return { ok: true, data: { denom } };
+        // Resolve the sticky active token (BUS-34): a chosen denom stays put with
+        // no chain read; otherwise the first held denom is adopted and persisted.
+        return { ok: true, data: { denom: await resolveActiveDenom(keyring, settings, balance) } };
       }
       case 'setActiveToken': {
         // A deliberate user switch (Epic 6): persist the chosen denom as the new
@@ -196,13 +212,12 @@ export async function handleKeyringRequest(
         };
       }
       case 'checkFeeEligibility': {
-        // The Epic-7 hook: re-check whether the active account can pay fees.
-        // Like getBalance/send, the background owns whose account this is.
-        const [account] = await keyring.getAccounts();
-        if (!account) {
-          throw new Error('no account to check fee eligibility for');
-        }
-        return { ok: true, data: await feeEligibility.check(account.address) };
+        // Re-check whether the *active token* can pay fees (BUS-38): resolve the
+        // sticky active denom here — the background owns which token that is, the
+        // popup never names it — and feed it to the LP-depth gate. No active
+        // token (no account, or holding nothing) is eligible: nothing to warn on.
+        const denom = await resolveActiveDenom(keyring, settings, balance);
+        return { ok: true, data: await feeEligibility.check(denom) };
       }
       case 'getSettings':
         return { ok: true, data: await settings.load() };
