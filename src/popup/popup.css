@@ -400,3 +400,71 @@ body {
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
+
+/* --- token switcher (BUS-37) ----------------------------------------------- */
+
+.switcher {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.switcher__label {
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ct-muted);
+}
+
+.switcher__list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.switcher__item {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid var(--ct-border);
+  border-radius: 8px;
+  background: var(--ct-surface);
+  color: var(--ct-fg);
+  font: inherit;
+  font-size: 0.8125rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.switcher__item:focus-visible {
+  outline: 2px solid var(--ct-accent);
+  outline-offset: 1px;
+}
+
+/* The active token is not clickable — it reads as the current selection. */
+.switcher__item--active,
+.switcher__item:disabled {
+  cursor: default;
+}
+
+.switcher__item--active {
+  border-color: var(--ct-accent);
+}
+
+.switcher__symbol {
+  font-weight: 600;
+}
+
+.switcher__amount {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+  color: var(--ct-muted);
+}

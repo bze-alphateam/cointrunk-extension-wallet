@@ -59,7 +59,10 @@ const feeEligibility = new LiquidityFeeEligibilityService(chainData);
 // it clears the alarm. Reconciling after the fact means unlock arms the timer
 // and lock disarms it without either code path knowing the auto-lock exists.
 chrome.runtime.onMessage.addListener((message: KeyringRequest, _sender, sendResponse) => {
-  handleKeyringRequest({ keyring, settings, balance, transactions, feeEligibility }, message)
+  handleKeyringRequest(
+    { keyring, settings, balance, transactions, feeEligibility, tokens: chainData },
+    message,
+  )
     .then(async (response) => {
       await autoLock.sync();
       return response;

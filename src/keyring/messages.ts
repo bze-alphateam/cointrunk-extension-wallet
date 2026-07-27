@@ -13,7 +13,9 @@
 import type { Balance, BalanceService } from '../chain/balance';
 import { selectStickyActiveDenom, type ActiveTokenState } from '../chain/active-token-selection';
 import { validateRecipientAddress } from '../chain/address';
+import type { TokenIdentityReader } from '../chain/chain-data';
 import type { FeeEligibilityService, FeeTokenEligibility } from '../chain/fees';
+import type { TokenIdentity } from '../chain/metadata';
 import type { SendRequest, TransactionService, TxResult } from '../chain/tx';
 import type { SignRequest } from './crypto';
 import type { CreatedAccount, Keyring, KeyringState } from './keyring';
@@ -37,6 +39,20 @@ export interface KeyringServices {
   readonly balance: BalanceService;
   readonly transactions: TransactionService;
   readonly feeEligibility: FeeEligibilityService;
+  /** Token identity metadata for the switcher's list (BUS-37), via the cached data layer. */
+  readonly tokens: TokenIdentityReader;
+}
+
+/**
+ * A token the account holds, as the switcher lists it (BUS-37): the denom, its
+ * balance in base units, and its chain-sourced display identity (name, symbol,
+ * logo, decimals). Composed in the background so the popup gets a ready-to-render
+ * row without a chain client of its own.
+ */
+export interface HeldToken {
+  readonly denom: string;
+  readonly amount: string;
+  readonly identity: TokenIdentity;
 }
 
 /** Every request the popup can send. Discriminated by `type`. */
@@ -55,6 +71,7 @@ export type KeyringRequest =
   | { readonly type: 'getBalance' }
   | { readonly type: 'getActiveToken' }
   | { readonly type: 'setActiveToken'; readonly denom: string }
+  | { readonly type: 'getHeldTokens' }
   | { readonly type: 'send'; readonly request: SendRequest }
   | { readonly type: 'checkFeeEligibility' }
   | { readonly type: 'getSettings' }
@@ -82,6 +99,8 @@ export interface KeyringResponseData {
   getActiveToken: ActiveTokenState;
   /** The now-active token after a deliberate switch (its denom) — see {@link ActiveTokenState}. */
   setActiveToken: ActiveTokenState;
+  /** The account's held tokens with identities, for the switcher — see {@link HeldToken}. */
+  getHeldTokens: readonly HeldToken[];
   /** The broadcast result (tx hash) of a send — see {@link TxResult}. */
   send: TxResult;
   /** Re-checked fee-token eligibility for the active account (Epic 7 hook). */
@@ -146,7 +165,7 @@ async function resolveActiveDenom(
  * a well-formed reply.
  */
 export async function handleKeyringRequest(
-  { keyring, settings, balance, transactions, feeEligibility }: KeyringServices,
+  { keyring, settings, balance, transactions, feeEligibility, tokens }: KeyringServices,
   request: KeyringRequest,
 ): Promise<KeyringResponse> {
   try {
@@ -190,6 +209,25 @@ export async function handleKeyringRequest(
         const current = await settings.load();
         await settings.save({ ...current, activeTokenDenom: request.denom });
         return { ok: true, data: { denom: request.denom } };
+      }
+      case 'getHeldTokens': {
+        // The switcher's list (BUS-37): the account's held balances, each joined
+        // with its cached chain identity so the popup renders names/logos without
+        // a chain client. Like getBalance, the background owns whose account this
+        // is; no account (or an empty account) is just an empty list.
+        const [account] = await keyring.getAccounts();
+        if (!account) {
+          return { ok: true, data: [] };
+        }
+        const balances = await balance.getAllBalances(account.address);
+        const held = await Promise.all(
+          balances.map(async (b) => ({
+            denom: b.denom,
+            amount: b.amount,
+            identity: await tokens.getTokenIdentity(b.denom),
+          })),
+        );
+        return { ok: true, data: held };
       }
       case 'send': {
         // Same trust boundary as getBalance: the background owns the sending

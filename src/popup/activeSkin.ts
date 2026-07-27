@@ -36,6 +36,17 @@ export function startSkin(): void {
 }
 
 /**
+ * Re-skin to a known active-token denom immediately (BUS-37). The token switcher
+ * calls this the moment a switch is persisted, so the wallet repaints to the new
+ * token without a round trip back to the background for what it already knows.
+ * Keeps following the OS light/dark setting via {@link currentThemeId}.
+ */
+export function applyActiveSkin(denom: string | null): void {
+  currentThemeId = activeThemeId(denom);
+  paint();
+}
+
+/**
  * Ask the background for the active token and re-skin to it. Failures are
  * swallowed: an unreachable background just leaves the default skin in place —
  * branding never blocks the wallet.
@@ -43,8 +54,7 @@ export function startSkin(): void {
 export async function resolveActiveSkin(): Promise<void> {
   try {
     const { denom } = await request({ type: 'getActiveToken' });
-    currentThemeId = activeThemeId(denom);
-    paint();
+    applyActiveSkin(denom);
   } catch {
     // Keep the default skin already painted by startSkin().
   }

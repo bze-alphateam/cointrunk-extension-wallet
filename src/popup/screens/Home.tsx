@@ -1,18 +1,22 @@
 /**
  * The wallet's main screen, shown while unlocked: the active token balance, the
- * account address, an explicit Lock button, and a way into settings.
+ * account address, an explicit Lock button, and a way into settings. When the
+ * user has enabled token switching (BUS-36), a switcher lists their tokens and
+ * lets them change the active one, re-skinning the wallet (BUS-37).
  *
  * The balance is fetched on mount. Because the popup mounts fresh every time it
  * opens, that is exactly "refresh on popup open" (BUS-19) with no extra plumbing.
- * Transactions arrive in later tickets.
  */
 
 import { useEffect, useRef, useState } from 'react';
 import type { Balance } from '../../chain/balance';
 import { ACTIVE_TOKEN, formatTokenAmount } from '../../chain/token';
+import type { HeldToken } from '../../keyring/messages';
 import type { KeyringState } from '../../keyring/keyring';
+import { applyActiveSkin } from '../activeSkin';
 import { copyText } from '../clipboard';
 import { request } from '../keyringClient';
+import { TokenSwitcher } from './TokenSwitcher';
 
 /** How long the "Copied" confirmation stays up after a successful copy. */
 const COPIED_FEEDBACK_MS = 1500;
@@ -38,6 +42,12 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
+  // Token switcher (BUS-37), shown only when enabled in Settings (BUS-36).
+  const [switchingEnabled, setSwitchingEnabled] = useState(false);
+  const [tokens, setTokens] = useState<readonly HeldToken[]>([]);
+  const [activeDenom, setActiveDenom] = useState<string | null>(null);
+  const [switching, setSwitching] = useState(false);
+
   useEffect(() => {
     let cancelled = false;
     request({ type: 'getBalance' })
@@ -54,6 +64,53 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
       cancelled = true;
     };
   }, []);
+
+  // Load the switcher's inputs on open: the toggle, the active denom, and (only
+  // when switching is on) the held-token list. Failures leave the switcher
+  // hidden rather than surfacing an error — it is an optional convenience, and a
+  // flaky chain read must never block the wallet's core balance/send/receive.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const settings = await request({ type: 'getSettings' });
+        if (cancelled) return;
+        setSwitchingEnabled(settings.tokenSwitchingEnabled);
+        const { denom } = await request({ type: 'getActiveToken' });
+        if (cancelled) return;
+        setActiveDenom(denom);
+        if (settings.tokenSwitchingEnabled) {
+          const held = await request({ type: 'getHeldTokens' });
+          if (cancelled) return;
+          setTokens(held);
+        }
+      } catch {
+        // Keep the switcher hidden; the core screen still works.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  /**
+   * Switch the active token (BUS-37): persist the choice and re-skin the wallet
+   * to it immediately. The eligibility re-check that a switch triggers is wired
+   * in BUS-40.
+   */
+  async function switchToken(denom: string) {
+    if (denom === activeDenom || switching) return;
+    setSwitching(true);
+    try {
+      const active = await request({ type: 'setActiveToken', denom });
+      setActiveDenom(active.denom);
+      applyActiveSkin(active.denom);
+    } catch {
+      // A failed switch leaves the previous active token in place.
+    } finally {
+      setSwitching(false);
+    }
+  }
 
   // Clear any pending "Copied" reset when the popup closes.
   useEffect(() => () => clearTimeout(copiedTimer.current), []);
@@ -123,6 +180,15 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
             Receive
           </button>
         </div>
+      )}
+
+      {switchingEnabled && (
+        <TokenSwitcher
+          tokens={tokens}
+          activeDenom={activeDenom}
+          onSwitch={(denom) => void switchToken(denom)}
+          switching={switching}
+        />
       )}
 
       {error && <p className="form__error">{error}</p>}

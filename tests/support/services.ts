@@ -4,7 +4,9 @@
  */
 
 import type { Balance, BalanceService } from '../../src/chain/balance';
+import type { TokenIdentityReader } from '../../src/chain/chain-data';
 import type { FeeEligibilityService, FeeTokenEligibility } from '../../src/chain/fees';
+import type { TokenIdentity } from '../../src/chain/metadata';
 import type { SendParams, TransactionService, TxResult } from '../../src/chain/tx';
 import type { Keyring } from '../../src/keyring/keyring';
 import type { KeyringServices } from '../../src/keyring/messages';
@@ -102,13 +104,37 @@ export class FakeFeeEligibilityService implements FeeEligibilityService {
   };
 }
 
-/** Bundle a keyring with fresh settings, balance, transaction and fee doubles. */
+/**
+ * `TokenIdentityReader` double that echoes a denom-derived identity, or serves a
+ * per-denom map when one is supplied. Records the denoms it was asked about.
+ */
+export class FakeTokenIdentityReader implements TokenIdentityReader {
+  queriedDenoms: string[] = [];
+
+  constructor(private readonly byDenom: Record<string, TokenIdentity> = {}) {}
+
+  getTokenIdentity = async (denom: string): Promise<TokenIdentity> => {
+    this.queriedDenoms.push(denom);
+    return (
+      this.byDenom[denom] ?? {
+        denom,
+        name: denom,
+        symbol: denom,
+        decimals: 0,
+        logoUri: null,
+      }
+    );
+  };
+}
+
+/** Bundle a keyring with fresh settings, balance, transaction, fee and token doubles. */
 export function services(
   keyring: Keyring,
   settings = new MemorySettingsStore(),
   balance = new FakeBalanceService(),
   transactions = new FakeTransactionService(),
   feeEligibility = new FakeFeeEligibilityService(),
+  tokens = new FakeTokenIdentityReader(),
 ): KeyringServices {
-  return { keyring, settings, balance, transactions, feeEligibility };
+  return { keyring, settings, balance, transactions, feeEligibility, tokens };
 }
