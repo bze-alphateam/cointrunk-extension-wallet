@@ -59,6 +59,7 @@ export type KeyringRequest =
   | { readonly type: 'checkFeeEligibility' }
   | { readonly type: 'getSettings' }
   | { readonly type: 'setAutoLockMinutes'; readonly minutes: number }
+  | { readonly type: 'setTokenSwitchingEnabled'; readonly enabled: boolean }
   | { readonly type: 'sign'; readonly request: SignRequest };
 
 /** Success payload for each request type. */
@@ -87,6 +88,7 @@ export interface KeyringResponseData {
   checkFeeEligibility: FeeTokenEligibility;
   getSettings: WalletSettings;
   setAutoLockMinutes: WalletSettings;
+  setTokenSwitchingEnabled: WalletSettings;
   sign: unknown;
 }
 
@@ -210,6 +212,18 @@ export async function handleKeyringRequest(
         // active token) as it was, rather than resetting the whole blob.
         const current = await settings.load();
         const updated: WalletSettings = { ...current, autoLockMinutes: request.minutes };
+        await settings.save(updated);
+        return { ok: true, data: updated };
+      }
+      case 'setTokenSwitchingEnabled': {
+        // Reveal or hide the switcher (BUS-36). Coerce to a real boolean and,
+        // like the auto-lock setter, change only this flag so nothing else in
+        // the settings blob (the sticky active token, the timeout) is disturbed.
+        const current = await settings.load();
+        const updated: WalletSettings = {
+          ...current,
+          tokenSwitchingEnabled: request.enabled === true,
+        };
         await settings.save(updated);
         return { ok: true, data: updated };
       }

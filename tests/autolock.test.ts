@@ -118,6 +118,7 @@ describe('AutoLock.sync (BUS-18)', () => {
       new MemorySettingsStore({
         autoLockMinutes: 3,
         activeTokenDenom: null,
+        tokenSwitchingEnabled: false,
       }),
     );
     await keyring.unlock(PASSWORD);
@@ -338,7 +339,11 @@ describe('settings over the message API (BUS-18)', () => {
       await handleKeyringRequest(services(keyring, settings), { type: 'getSettings' }),
     ).toEqual({
       ok: true,
-      data: { autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES, activeTokenDenom: null },
+      data: {
+        autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
+        activeTokenDenom: null,
+        tokenSwitchingEnabled: false,
+      },
     });
   });
 
@@ -366,5 +371,52 @@ describe('settings over the message API (BUS-18)', () => {
 
     expect(response.ok).toBe(false);
     expect(settings.settings.autoLockMinutes).toBe(DEFAULT_AUTO_LOCK_MINUTES);
+  });
+});
+
+// --- Token-switching toggle over the message API ----------------------------
+
+describe('token-switching toggle over the message API (BUS-36)', () => {
+  it('is off by default', async () => {
+    const { keyring, settings } = await setUpWallet();
+
+    const response = await handleKeyringRequest(services(keyring, settings), {
+      type: 'getSettings',
+    });
+
+    expect(response).toEqual({ ok: true, data: expect.objectContaining({ tokenSwitchingEnabled: false }) });
+  });
+
+  it('persists the flag and returns the updated settings', async () => {
+    const { keyring, settings } = await setUpWallet();
+
+    const response = await handleKeyringRequest(services(keyring, settings), {
+      type: 'setTokenSwitchingEnabled',
+      enabled: true,
+    });
+
+    expect(response).toEqual({ ok: true, data: expect.objectContaining({ tokenSwitchingEnabled: true }) });
+    expect(settings.settings.tokenSwitchingEnabled).toBe(true);
+  });
+
+  it('changes only the flag, leaving the timeout and active token untouched', async () => {
+    const { keyring, settings } = await setUpWallet(
+      new MemorySettingsStore({
+        autoLockMinutes: 9,
+        activeTokenDenom: 'ubze',
+        tokenSwitchingEnabled: false,
+      }),
+    );
+
+    await handleKeyringRequest(services(keyring, settings), {
+      type: 'setTokenSwitchingEnabled',
+      enabled: true,
+    });
+
+    expect(settings.settings).toEqual({
+      autoLockMinutes: 9,
+      activeTokenDenom: 'ubze',
+      tokenSwitchingEnabled: true,
+    });
   });
 });

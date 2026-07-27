@@ -29,6 +29,7 @@ export class MemorySettingsStore implements SettingsStore {
     this.settings = {
       autoLockMinutes: settings.autoLockMinutes,
       activeTokenDenom: normalizeActiveTokenDenom(settings.activeTokenDenom),
+      tokenSwitchingEnabled: settings.tokenSwitchingEnabled === true,
     };
   };
 }

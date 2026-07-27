@@ -36,11 +36,20 @@ export interface WalletSettings {
    * the UI renders as the neutral default skin.
    */
   readonly activeTokenDenom: string | null;
+  /**
+   * Whether the token switcher is revealed (BUS-36). Off by default: v1 opens as
+   * a single-token wallet skinned to the active token, and only a user who opts
+   * in from Settings sees the network-style switcher (Epic 6). Off never blocks
+   * anything — the active token is still chosen and shown; it just can't be
+   * changed by hand.
+   */
+  readonly tokenSwitchingEnabled: boolean;
 }
 
 export const DEFAULT_SETTINGS: WalletSettings = {
   autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
   activeTokenDenom: null,
+  tokenSwitchingEnabled: false,
 };
 
 /** Abstract settings persistence, so the auto-lock can be tested in memory. */
@@ -106,6 +115,10 @@ export function withDefaults(stored: unknown): WalletSettings {
   return {
     autoLockMinutes,
     activeTokenDenom: normalizeActiveTokenDenom(raw.activeTokenDenom),
+    // Anything that isn't literally `true` is off, so a missing or corrupt flag
+    // fails safe to the single-token default rather than surprising the user
+    // with a switcher they never enabled.
+    tokenSwitchingEnabled: raw.tokenSwitchingEnabled === true,
   };
 }
 
@@ -124,6 +137,7 @@ export class ChromeSettingsStore implements SettingsStore {
       [SETTINGS_STORAGE_KEY]: {
         autoLockMinutes: settings.autoLockMinutes,
         activeTokenDenom: normalizeActiveTokenDenom(settings.activeTokenDenom),
+        tokenSwitchingEnabled: settings.tokenSwitchingEnabled === true,
       },
     });
   }

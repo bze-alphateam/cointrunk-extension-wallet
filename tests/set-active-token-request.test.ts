@@ -64,14 +64,22 @@ describe('setActiveToken request (BUS-35)', () => {
 
   it('keeps other settings intact — a switch must not reset the auto-lock timeout', async () => {
     const keyring = await keyringWithAccount();
-    const settings = new MemorySettingsStore({ autoLockMinutes: 5, activeTokenDenom: null });
+    const settings = new MemorySettingsStore({
+      autoLockMinutes: 5,
+      activeTokenDenom: null,
+      tokenSwitchingEnabled: false,
+    });
 
     await handleKeyringRequest(services(keyring, settings), {
       type: 'setActiveToken',
       denom: 'ubze',
     });
 
-    expect(settings.settings).toEqual({ autoLockMinutes: 5, activeTokenDenom: 'ubze' });
+    expect(settings.settings).toEqual({
+      autoLockMinutes: 5,
+      activeTokenDenom: 'ubze',
+      tokenSwitchingEnabled: false,
+    });
   });
 
   it('is sticky once set: getActiveToken returns it without a balance query', async () => {
