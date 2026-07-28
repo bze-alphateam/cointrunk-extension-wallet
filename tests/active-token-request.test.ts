@@ -55,6 +55,7 @@ describe('getActiveToken request (BUS-34)', () => {
     const settings = new MemorySettingsStore({
       autoLockMinutes: DEFAULT_AUTO_LOCK_MINUTES,
       activeTokenDenom: 'factory/bze1abc/xyz',
+      tokenSwitchingEnabled: false,
     });
     const balance = new FakeBalanceService({ denom: 'ubze', amount: '0' }, [
       { denom: 'ubze', amount: '1000000' },

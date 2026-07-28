@@ -18,6 +18,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { validateRecipientAddress } from '../../chain/address';
 import type { Balance } from '../../chain/balance';
 import { txExplorerUrl } from '../../chain/explorer';
+import { FEE_INELIGIBLE_REASON } from '../../chain/fees';
 import { ACTIVE_TOKEN, formatTokenAmount, parseTokenAmount } from '../../chain/token';
 import { DEFAULT_SEND_FEE, type TxResult } from '../../chain/tx';
 import { request } from '../keyringClient';
@@ -116,12 +117,21 @@ export function Send({ onClose }: SendProps) {
       setResult(res);
     } catch (cause) {
       setSendError(cause instanceof Error ? cause.message : 'The transaction could not be sent.');
+      // BUS-40: a send can fail because the active token is too low-liquidity to
+      // be an accepted fee token, so re-check eligibility automatically the moment
+      // it fails — the result shows below without the user having to ask.
+      void recheckFeeEligibility();
     } finally {
       setStep('result');
     }
   }
 
-  /** Re-check fee-token eligibility from the failure state (Epic 7 hook). */
+  /**
+   * Re-check whether the active token can pay fees (BUS-38/40). Runs
+   * automatically when a send fails, and again if the user taps the manual
+   * retry. Purely informational — it explains a likely cause, it doesn't retry
+   * the send.
+   */
   async function recheckFeeEligibility() {
     setFeeCheck(null);
     setFeeChecking(true);
@@ -129,8 +139,8 @@ export function Send({ onClose }: SendProps) {
       const eligibility = await request({ type: 'checkFeeEligibility' });
       setFeeCheck(
         eligibility.eligible
-          ? (eligibility.reason ?? `You can cover the network fee — try the send again.`)
-          : (eligibility.reason ?? `You cannot currently cover the network fee.`),
+          ? (eligibility.reason ?? 'This token can currently be used to pay network fees.')
+          : (eligibility.reason ?? FEE_INELIGIBLE_REASON),
       );
     } catch (cause) {
       setFeeCheck(
@@ -240,15 +250,16 @@ export function Send({ onClose }: SendProps) {
             <p className="result__title result__title--error">Transaction failed</p>
             <p className="form__error">{sendError}</p>
 
-            {/* Epic 7 hook: a common cause is not being able to cover the fee in
-                an accepted fee token, so offer a re-check right where it fails. */}
+            {/* BUS-40: the fee-token re-check runs automatically on failure (a
+                common cause is a too-low-liquidity fee token); this button just
+                re-runs it on demand. */}
             <button
               className="button button--secondary"
               type="button"
               onClick={() => void recheckFeeEligibility()}
               disabled={feeChecking}
             >
-              {feeChecking ? 'Checking…' : 'Check fee-token eligibility'}
+              {feeChecking ? 'Checking…' : 'Re-check fee-token eligibility'}
             </button>
             {feeCheck && <p className="form__hint">{feeCheck}</p>}
 
