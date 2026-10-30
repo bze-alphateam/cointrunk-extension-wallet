@@ -11,6 +11,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "package": "node scripts/package-extension.mjs",
+    "package:source": "node scripts/package-source.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

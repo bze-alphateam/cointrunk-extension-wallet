@@ -8,10 +8,16 @@ import manifest from './manifest.json';
 // (e.g. the background service worker at src/background/index.ts) and rewrites
 // the manifest paths in the output. `pnpm dev` runs it with HMR; `pnpm build`
 // produces the loadable dist/.
+//
+// The production build is reproducible (BUILD.md, checked by the "Reproducible
+// build" workflow): output depends only on the source, the lockfile and the
+// pinned Node/pnpm versions. Keep it that way: no timestamps, git hashes or
+// machine paths injected via `define`, and no source maps in the store package.
 export default defineConfig({
   plugins: [react(), crx({ manifest })],
   build: {
     outDir: 'dist',
     emptyOutDir: true,
+    sourcemap: false,
   },
 });
