@@ -1,16 +1,16 @@
 /**
  * The theme id to skin the wallet with for a given active token (BUS-34).
  *
- * This is the narrow, pre-registry branding decision Epic 6 needs: the native
+ * This is the narrow branding decision Epic 6 needs: the native
  * **BZE** token gets the {@link BZE_THEME_ID BZE skin}; everything else — a
  * factory token, or no active token at all — gets the neutral
  * {@link DEFAULT_THEME_ID default skin}.
  *
- * The full branding gate (a GitHub registry entry AND LP liquidity over the
- * governance threshold; see Confluence "4. Token Eligibility & Branding
- * Criteria") is Epic 5 (BUS-31/32/33) and will replace the "else → default"
- * branch here with a real lookup. BZE stays a hard-coded skin regardless: it is
- * the native coin and always branded, with no registry entry to depend on.
+ * Epic 5 replaces the "else → default" branch with the token's on-chain
+ * branding: any token with a valid branding package is branded
+ * ({@link ./branding.decideBranding}, BUS-32), applied to the UI in BUS-33. BZE
+ * stays a hard-coded skin regardless: it is the native coin and always branded,
+ * with no on-chain package to depend on.
  */
 
 import { BZE_BASE_DENOM } from '../chain/constants';

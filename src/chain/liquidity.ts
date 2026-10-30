@@ -4,8 +4,8 @@
  *
  * BeeZee's liquidity lives in the **tradebin** module, which is a hybrid of an
  * order book and constant-product AMM pools. The signal BusyWallet cares about
- * is the **AMM pool** only — order-book market depth is explicitly not used
- * (see Confluence "4. Token Eligibility & Branding Criteria"). Each pool pairs
+ * is the **AMM pool** only — order-book market depth is explicitly not used.
+ * Each pool pairs
  * two denoms and stores their reserves; for a token/BZE pool the "BZE-side
  * depth" is the reserve on whichever side is the native `ubze`.
  *
@@ -32,9 +32,10 @@
  * A token with no pool is not an error: {@link TradebinLiquidityService.getNativeDepth}
  * returns `0n`, which is below any positive threshold — the ticket's "tokens
  * with no LP are treated as below threshold". This module only *reads* the two
- * numbers; how they combine (the branding gate uses strictly greater-than, the
- * fee-token warning shares the same signal) is the consuming ticket's call, so
- * no comparison operator is baked in here.
+ * numbers; how they combine is the consumer's call (fee-token eligibility,
+ * {@link ./fees}), so no comparison operator is baked in here. Branding does
+ * not use liquidity at all — it comes from the token's on-chain branding
+ * package alone (BUS-32).
  */
 
 import { ChainClient, ChainQueryError } from './client';
@@ -161,7 +162,7 @@ function parseThresholdResponse(body: unknown): bigint {
  * A chain integer (`cosmossdk.io/math.Int`) arrives as a JSON string of digits.
  * Anything that is not a non-negative integer string throws — reserves and the
  * threshold are unsigned on-chain, and a garbled value must not become a wrong
- * number the branding/fee-token gate then trusts.
+ * number the fee-token gate then trusts.
  */
 function parseIntAmount(value: unknown, field: string): bigint {
   if (typeof value !== 'string' || !/^\d+$/.test(value)) {

@@ -1,11 +1,13 @@
 /**
  * CachedChainData (BUS-28): the read facade that caches token metadata, LP
- * liquidity, and the governance threshold with per-kind TTLs, and invalidates
- * per token on switch.
+ * liquidity, the governance threshold and token branding (BUS-32) with
+ * per-kind TTLs, and invalidates per token on switch.
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import type { DenomBranding } from '../src/chain/branding';
 import { CachedChainData, DEFAULT_CACHE_TTLS } from '../src/chain/chain-data';
+import { ChainUnavailableError } from '../src/chain/client';
 import type { TokenIdentity } from '../src/chain/metadata';
 
 function fakeClock(start = 1_000): { now: () => number; advance: (ms: number) => void } {
@@ -17,16 +19,24 @@ function identity(denom: string): TokenIdentity {
   return { denom, name: denom, symbol: denom, decimals: 6, logoUri: null };
 }
 
+const BRANDING: DenomBranding = {
+  font: 'inter',
+  light: { background: '#ffffff', text: '#111111', primary: '#ff6600', secondary: '#0066ff' },
+  dark: { background: '#000000', text: '#eeeeee', primary: '#ff8833', secondary: '#3388ff' },
+};
+
 /** Spy readers so we can count how often each underlying chain read runs. */
 function readers() {
   const getTokenIdentity = vi.fn(async (denom: string) => identity(denom));
   const getNativeDepth = vi.fn(async (denom: string): Promise<bigint> => (denom ? 100n : 0n));
   const getThreshold = vi.fn(async () => 42n);
+  const getBranding = vi.fn(async (): Promise<DenomBranding | null> => BRANDING);
   return {
-    spies: { getTokenIdentity, getNativeDepth, getThreshold },
+    spies: { getTokenIdentity, getNativeDepth, getThreshold, getBranding },
     readers: {
       metadata: { getTokenIdentity },
       liquidity: { getNativeDepth, getThreshold },
+      branding: { getBranding },
     },
   };
 }
@@ -144,7 +154,11 @@ describe('CachedChainData (BUS-28)', () => {
       .mockResolvedValueOnce(42n)
       .mockRejectedValue(new Error('down'));
     const data = new CachedChainData(
-      { metadata: { getTokenIdentity }, liquidity: { getNativeDepth, getThreshold } },
+      {
+        metadata: { getTokenIdentity },
+        liquidity: { getNativeDepth, getThreshold },
+        branding: { getBranding: async () => null },
+      },
       { now: clock.now },
     );
 
@@ -157,5 +171,65 @@ describe('CachedChainData (BUS-28)', () => {
     expect(await data.getTokenIdentity('uvdl')).toEqual(identity('uvdl'));
     expect(await data.getNativeDepth('uvdl')).toBe(100n);
     expect(await data.getThreshold()).toBe(42n);
+  });
+
+  it('caches branding within its TTL and re-reads it after', async () => {
+    const clock = fakeClock();
+    const { spies, readers: r } = readers();
+    const data = new CachedChainData(r, { now: clock.now });
+
+    expect(await data.getBranding('uvdl')).toEqual(BRANDING);
+    await data.getBranding('uvdl');
+    expect(spies.getBranding).toHaveBeenCalledTimes(1);
+
+    clock.advance(DEFAULT_CACHE_TTLS.brandingTtlMs);
+    await data.getBranding('uvdl');
+    expect(spies.getBranding).toHaveBeenCalledTimes(2);
+  });
+
+  it('caches "no branding" too, so an unbranded token is not re-queried on every open', async () => {
+    const clock = fakeClock();
+    const { spies, readers: r } = readers();
+    spies.getBranding.mockResolvedValue(null);
+    const data = new CachedChainData(r, { now: clock.now });
+
+    expect(await data.getBranding('uvdl')).toBeNull();
+    expect(await data.getBranding('uvdl')).toBeNull();
+    expect(spies.getBranding).toHaveBeenCalledTimes(1);
+  });
+
+  it('invalidateToken re-reads the token branding (token switch)', async () => {
+    const clock = fakeClock();
+    const { spies, readers: r } = readers();
+    const data = new CachedChainData(r, { now: clock.now });
+
+    await data.getBranding('uvdl');
+    data.invalidateToken('uvdl');
+    await data.getBranding('uvdl');
+
+    expect(spies.getBranding).toHaveBeenCalledTimes(2);
+  });
+
+  it('reads an unreachable chain with nothing cached as no branding', async () => {
+    const clock = fakeClock();
+    const { spies, readers: r } = readers();
+    spies.getBranding.mockRejectedValue(new ChainUnavailableError('rest'));
+    const data = new CachedChainData(r, { now: clock.now });
+
+    await expect(data.getBranding('uvdl')).resolves.toBeNull();
+  });
+
+  it('serves stale branding when a refresh fails, and does not cache the outage', async () => {
+    const clock = fakeClock();
+    const { spies, readers: r } = readers();
+    const data = new CachedChainData(r, { now: clock.now });
+
+    await data.getBranding('uvdl');
+    clock.advance(DEFAULT_CACHE_TTLS.brandingTtlMs);
+    spies.getBranding.mockRejectedValueOnce(new ChainUnavailableError('rest'));
+
+    expect(await data.getBranding('uvdl')).toEqual(BRANDING); // stale, not null
+    expect(await data.getBranding('uvdl')).toEqual(BRANDING); // retried and refreshed
+    expect(spies.getBranding).toHaveBeenCalledTimes(3);
   });
 });
