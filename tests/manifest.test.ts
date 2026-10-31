@@ -1,6 +1,7 @@
 /// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
 import manifest from '../manifest.json';
+import { BUILD_TARGETS, GECKO_ID, firefoxManifest, manifestFor } from '../manifest.config';
 import permissionsDoc from '../docs/store/permissions.md?raw';
 
 // Every permission the manifest requests must be listed here AND justified in
@@ -104,5 +105,47 @@ describe('MV3 manifest invariants', () => {
     expect(manifest).not.toHaveProperty('content_scripts');
     expect(manifest).not.toHaveProperty('web_accessible_resources');
     expect(manifest).not.toHaveProperty('externally_connectable');
+  });
+});
+
+// One source manifest, one variant per browser (manifest.config.ts). Firefox MV3
+// has no background service worker and AMO requires the gecko block; Chrome
+// warns on `browser_specific_settings`, so it must stay out of the Chrome build.
+describe('per-browser manifests', () => {
+  it('builds Chrome from manifest.json unchanged', () => {
+    const chrome = manifestFor('chrome');
+    expect(chrome).toEqual(manifest);
+    expect(chrome).not.toHaveProperty('browser_specific_settings');
+    expect(chrome.background).not.toHaveProperty('scripts');
+  });
+
+  it('runs the Firefox background as a module event page, not a service worker', () => {
+    expect(manifestFor('firefox')).toBe(firefoxManifest);
+    expect(firefoxManifest.background).toEqual({
+      scripts: ['src/background/index.ts'],
+      type: 'module',
+    });
+    expect(firefoxManifest.background).not.toHaveProperty('service_worker');
+  });
+
+  it('gives Firefox the add-on id and the AMO data collection declaration', () => {
+    const { gecko, gecko_android: geckoAndroid } = firefoxManifest.browser_specific_settings;
+    expect(gecko.id).toBe(GECKO_ID);
+    expect(gecko.data_collection_permissions).toEqual({ required: ['none'] });
+    // data_collection_permissions is honoured from Firefox 140 (desktop) / 142 (Android).
+    expect(Number.parseFloat(gecko.strict_min_version)).toBeGreaterThanOrEqual(140);
+    expect(Number.parseFloat(geckoAndroid.strict_min_version)).toBeGreaterThanOrEqual(142);
+  });
+
+  it('keeps every other key identical across browsers', () => {
+    const shared = (m: object) => {
+      const copy: Record<string, unknown> = { ...m };
+      delete copy.background;
+      delete copy.browser_specific_settings;
+      return copy;
+    };
+    for (const target of BUILD_TARGETS) {
+      expect(shared(manifestFor(target))).toEqual(shared(manifest));
+    }
   });
 });

@@ -2,9 +2,14 @@
 
 These are the step-by-step instructions to rebuild the exact extension package
 submitted to the browser stores (Mozilla Add-ons, Chrome Web Store) from this
-source code. The build is reproducible: the same source gives a byte-identical
-`cointrunk-wallet-<version>.zip`, so the result can be checked with a single
-SHA-256 comparison.
+source code. The build is reproducible: the same source gives byte-identical
+packages, one per browser, so each can be checked with a single SHA-256
+comparison:
+
+| Store            | Package                                  |
+| ---------------- | ---------------------------------------- |
+| Mozilla Add-ons  | `cointrunk-wallet-<version>-firefox.zip` |
+| Chrome Web Store | `cointrunk-wallet-<version>-chrome.zip`  |
 
 The extension code is TypeScript + React, bundled and minified by
 [Vite](https://vite.dev/) with
@@ -53,35 +58,38 @@ The build reads no `.env` file and embeds no secrets.
    pnpm install --frozen-lockfile
    ```
 
-5. **Build** the extension into `dist/`:
+5. **Build** the extension for both browsers, into `dist/firefox/` and
+   `dist/chrome/`:
 
    ```bash
    pnpm build
    ```
 
-6. **Package** `dist/` into the store zip:
+6. **Package** each build into its store zip:
 
    ```bash
    pnpm package
    ```
 
-   This writes `release/cointrunk-wallet-<version>.zip` and prints its SHA-256
-   (also saved in `release/cointrunk-wallet-<version>.zip.sha256`).
+   This writes `release/cointrunk-wallet-<version>-firefox.zip` and
+   `release/cointrunk-wallet-<version>-chrome.zip` and prints the SHA-256 of
+   each (also saved next to it, in `<zip>.sha256`).
 
 ## Verifying against the submitted package
 
-Compare the SHA-256 printed in step 6 with the hash of the submitted file:
+Compare the SHA-256 printed in step 6 with the hash of the submitted file
+(the Firefox package for Mozilla Add-ons):
 
 ```bash
-sha256sum cointrunk-wallet-<version>.zip   # macOS: shasum -a 256 <file>
+sha256sum cointrunk-wallet-<version>-firefox.zip   # macOS: shasum -a 256 <file>
 ```
 
 The two hashes are identical. To compare the contents instead of the archive,
-unzip the submitted package and diff it against `dist/`:
+unzip the submitted package and diff it against the matching build directory:
 
 ```bash
-mkdir submitted && unzip -q cointrunk-wallet-<version>.zip -d submitted
-diff -r submitted dist && echo "identical"
+mkdir submitted && unzip -q cointrunk-wallet-<version>-firefox.zip -d submitted
+diff -r submitted dist/firefox && echo "identical"
 ```
 
 `pnpm package` writes the zip itself rather than calling a zip tool, so the
@@ -91,17 +99,29 @@ uncompressed. See `scripts/package-extension.mjs`.
 
 ## Where the shipped code comes from
 
-| Packaged file                                                    | Source                                            |
-| ---------------------------------------------------------------- | ------------------------------------------------- |
-| `manifest.json`                                                  | `manifest.json`, entry paths rewritten by crxjs   |
-| `service-worker-loader.js`, `assets/index.ts-*.js`               | background service worker, `src/background/`      |
-| `src/popup/index.html`, `assets/index.html-*.js`, `assets/*.css` | popup UI, `src/popup/` and the modules it imports |
-| other `assets/*.js`                                              | modules shared by both entry points (`src/`)      |
-| `icons/*`                                                        | copied unchanged from `public/icons/`             |
-| `assets/*-latin-*-normal-*.woff2`                                | brand fonts, from the pinned `@fontsource/*` deps |
-| `licenses/FONTS.txt`                                             | copied unchanged from `public/licenses/`          |
+Both packages hold the same files and the same bundled code; only
+`manifest.json` differs between them (see below).
 
-The build configuration is `vite.config.ts`. Source maps are not shipped.
+| Packaged file                                                    | Source                                                                   |
+| ---------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `manifest.json`                                                  | `manifest.json` via `manifest.config.ts`, entry paths rewritten by crxjs |
+| `service-worker-loader.js`, `assets/index.ts-*.js`               | background script, `src/background/`                                     |
+| `src/popup/index.html`, `assets/index.html-*.js`, `assets/*.css` | popup UI, `src/popup/` and the modules it imports                        |
+| other `assets/*.js`                                              | modules shared by both entry points (`src/`)                             |
+| `icons/*`                                                        | copied unchanged from `public/icons/`                                    |
+| `assets/*-latin-*-normal-*.woff2`                                | brand fonts, from the pinned `@fontsource/*` deps                        |
+| `licenses/FONTS.txt`                                             | copied unchanged from `public/licenses/`                                 |
+
+The build configuration is `vite.config.ts`: `pnpm build` runs it once per
+browser (`vite build` for Chrome, `vite build --mode firefox` for Firefox).
+Source maps are not shipped.
+
+The Firefox `manifest.json` is the Chrome one with two changes, made in
+`manifest.config.ts`: the background module is listed under
+`background.scripts` (Firefox runs it as an event page) instead of
+`background.service_worker`, and `browser_specific_settings` adds the add-on id
+and the data collection declaration (`required: ["none"]`: the extension
+collects no data).
 
 ## How reproducibility is checked
 
@@ -109,7 +129,7 @@ Every pull request and push runs the **Reproducible build** workflow
 (`.github/workflows/reproducible.yml`). It builds and packages the checkout,
 then creates the source package with `pnpm package:source`, unpacks it in a
 different directory and follows the steps above from scratch. The workflow
-fails unless both zips have the same SHA-256.
+fails unless each browser's zip has the same SHA-256 in both builds.
 
 ## Creating the release packages (maintainers)
 
@@ -118,11 +138,12 @@ From a clean checkout of the release commit:
 ```bash
 pnpm install --frozen-lockfile
 pnpm build
-pnpm package          # release/cointrunk-wallet-<version>.zip (+ .sha256)
+pnpm package          # release/cointrunk-wallet-<version>-{chrome,firefox}.zip (+ .sha256)
 pnpm package:source   # release/cointrunk-wallet-<version>-source.zip
 ```
 
 `pnpm package:source` is `git archive` of `HEAD`: it contains exactly the
 committed files (this guide included) and nothing local, so commit first.
-Upload the extension zip to the store and the source zip as the "source code"
-of the submission.
+Upload the `-firefox.zip` to Mozilla Add-ons with the source zip as the
+"source code" of the submission, and the `-chrome.zip` to the Chrome Web
+Store.

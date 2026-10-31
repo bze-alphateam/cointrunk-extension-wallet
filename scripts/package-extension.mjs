@@ -1,5 +1,7 @@
-// Packs the built extension (dist/) into a byte-for-byte reproducible zip:
-//   release/cointrunk-wallet-<version>.zip  (+ .sha256 next to it)
+// Packs each built extension (dist/<target>/) into a byte-for-byte reproducible
+// zip, one per browser:
+//   release/cointrunk-wallet-<version>-chrome.zip   (+ .sha256 next to it)
+//   release/cointrunk-wallet-<version>-firefox.zip  (+ .sha256 next to it)
 //
 // The same source + lockfile + Node/pnpm versions always give the same zip, so a
 // store reviewer can rebuild it and compare one SHA-256 (see BUILD.md). Generic
@@ -14,12 +16,13 @@
 // It only reads dist/ and manifest.json, never git, so it works the same in an
 // unpacked source package as in a checkout.
 import { createHash } from 'node:crypto';
-import { mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { crc32 } from 'node:zlib';
 
 const DIST_DIR = 'dist';
 const RELEASE_DIR = 'release';
+const TARGETS = ['chrome', 'firefox'];
 
 // MS-DOS date/time of 1980-01-01 00:00: day 1, month 1, year 0 (= 1980).
 const DOS_TIME = 0;
@@ -35,13 +38,13 @@ function listFiles(dir) {
     .sort();
 }
 
-function buildZip(files) {
+function buildZip(dir, files) {
   const locals = [];
   const centrals = [];
   let offset = 0;
 
   for (const name of files) {
-    const data = readFileSync(join(DIST_DIR, name));
+    const data = readFileSync(join(dir, name));
     const nameBytes = Buffer.from(name, 'utf8');
     const crc = crc32(data);
 
@@ -90,19 +93,23 @@ function buildZip(files) {
 }
 
 const { version } = JSON.parse(readFileSync('manifest.json', 'utf8'));
-const files = listFiles(DIST_DIR);
-if (!files.includes('manifest.json')) {
-  console.error(`${DIST_DIR}/manifest.json not found: run \`pnpm build\` first.`);
-  process.exit(1);
-}
-
-const zip = buildZip(files);
-const zipName = `cointrunk-wallet-${version}.zip`;
-const sha256 = createHash('sha256').update(zip).digest('hex');
-
 mkdirSync(RELEASE_DIR, { recursive: true });
-writeFileSync(join(RELEASE_DIR, zipName), zip);
-writeFileSync(join(RELEASE_DIR, `${zipName}.sha256`), `${sha256}  ${zipName}\n`);
 
-console.log(`${RELEASE_DIR}/${zipName}: ${files.length} files, ${zip.length} bytes`);
-console.log(`sha256 ${sha256}`);
+for (const target of TARGETS) {
+  const dir = join(DIST_DIR, target);
+  const files = existsSync(dir) ? listFiles(dir) : [];
+  if (!files.includes('manifest.json')) {
+    console.error(`${dir}/manifest.json not found: run \`pnpm build\` first.`);
+    process.exit(1);
+  }
+
+  const zip = buildZip(dir, files);
+  const zipName = `cointrunk-wallet-${version}-${target}.zip`;
+  const sha256 = createHash('sha256').update(zip).digest('hex');
+
+  writeFileSync(join(RELEASE_DIR, zipName), zip);
+  writeFileSync(join(RELEASE_DIR, `${zipName}.sha256`), `${sha256}  ${zipName}\n`);
+
+  console.log(`${RELEASE_DIR}/${zipName}: ${files.length} files, ${zip.length} bytes`);
+  console.log(`sha256 ${sha256}`);
+}

@@ -10,7 +10,9 @@
   },
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
+    "build": "pnpm build:chrome && pnpm build:firefox",
+    "build:chrome": "vite build",
+    "build:firefox": "vite build --mode firefox",
     "package": "node scripts/package-extension.mjs",
     "package:source": "node scripts/package-source.mjs",
     "typecheck": "tsc --noEmit",

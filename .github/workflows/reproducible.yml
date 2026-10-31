@@ -2,8 +2,8 @@ name: Reproducible build
 
 # Proves the store package can be rebuilt byte-for-byte from the source package
 # (BUILD.md): build + package the checkout, then unpack `pnpm package:source` in
-# another directory, follow BUILD.md from scratch and compare the SHA-256 of the
-# two extension zips.
+# another directory, follow BUILD.md from scratch and compare the SHA-256 of
+# each browser's extension zip (Chrome and Firefox) across the two builds.
 
 on:
   push:
@@ -26,20 +26,16 @@ jobs:
           cache: pnpm
 
       - name: Build and package the checkout
-        id: first
         run: |
           pnpm install --frozen-lockfile
           pnpm build
           pnpm package
           pnpm package:source
-          zip=$(ls release/cointrunk-wallet-*.zip | grep -v -- '-source\.zip$')
-          echo "zip=$zip" >> "$GITHUB_OUTPUT"
-          echo "sha=$(sha256sum "$zip" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          (cd release && sha256sum cointrunk-wallet-*-chrome.zip cointrunk-wallet-*-firefox.zip) > "$RUNNER_TEMP/checkout.sha256"
 
       # A fresh directory with no .git, node_modules or dist/: exactly what a
       # store reviewer unpacks.
       - name: Rebuild from the source package
-        id: second
         run: |
           rebuild="$RUNNER_TEMP/rebuild"
           mkdir "$rebuild"
@@ -48,25 +44,27 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm build
           pnpm package
-          echo "sha=$(sha256sum "${{ steps.first.outputs.zip }}" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+          (cd release && sha256sum cointrunk-wallet-*-chrome.zip cointrunk-wallet-*-firefox.zip) > "$RUNNER_TEMP/source.sha256"
 
       - name: Compare hashes
         run: |
-          echo "checkout:       ${{ steps.first.outputs.sha }}"
-          echo "source package: ${{ steps.second.outputs.sha }}"
-          if [ "${{ steps.first.outputs.sha }}" != "${{ steps.second.outputs.sha }}" ]; then
+          echo "checkout:";       cat "$RUNNER_TEMP/checkout.sha256"
+          echo "source package:"; cat "$RUNNER_TEMP/source.sha256"
+          if ! cmp -s "$RUNNER_TEMP/checkout.sha256" "$RUNNER_TEMP/source.sha256"; then
             echo "::error::The rebuild from the source package differs from the checkout build"
             exit 1
           fi
           {
             echo "### Reproducible build"
             echo
-            echo "\`${{ steps.first.outputs.zip }}\` rebuilt from the source package with the same SHA-256:"
+            echo "Both store zips rebuilt from the source package with the same SHA-256:"
             echo
-            echo "\`${{ steps.first.outputs.sha }}\`"
+            echo '```'
+            cat "$RUNNER_TEMP/checkout.sha256"
+            echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # PR-only: the store zip + source package, ready for a submission dry run.
+      # PR-only: the store zips + source package, ready for a submission dry run.
       - name: Compute short commit SHA
         if: github.event_name == 'pull_request'
         id: short
