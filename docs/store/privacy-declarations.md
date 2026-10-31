@@ -97,7 +97,7 @@ own:
 ```json
 "browser_specific_settings": {
   "gecko": {
-    "id": "<add-on id, chosen once at the first AMO upload>",
+    "id": "wallet@cointrunk.io",
     "data_collection_permissions": {
       "required": ["none"]
     }
@@ -110,15 +110,14 @@ the install prompt and in about:addons (**Permissions and data**). With
 `none`, older versions need no custom consent screen, since there is nothing to
 consent to.
 
-**Not yet in `manifest.json`.** The build has a single manifest, shared by the
-Chrome and Firefox artifacts (see the README, "Trying a PR build"), and it is
-Chrome-shaped: the background is a `service_worker`, which Firefox's Manifest V3
-does not run (Firefox expects `background.scripts`). A Firefox manifest
-variant, with the background entry and the `gecko` block above, is required
-before the AMO upload anyway. The declaration belongs there. Adding the block
-to the shared manifest now would not make the Firefox build work. Chrome would
-also flag `browser_specific_settings` as an unrecognised key on
-chrome://extensions (a warning, not an error).
+**Where it ships.** The block is only in the Firefox build. `manifest.json` is
+the Chrome manifest. `manifest.config.ts` derives the Firefox one from it: it
+adds `browser_specific_settings` (id `wallet@cointrunk.io`, minimum Firefox 140
+on desktop and 142 on Android, and the `none` declaration above) and moves the
+background module to `background.scripts`. `tests/manifest.test.ts` checks
+that the Firefox manifest carries the declaration and that the Chrome manifest
+never gets the block. Upload `cointrunk-wallet-<version>-firefox.zip` to AMO
+(see [`BUILD.md`](../../BUILD.md)).
 
 ### Listing questions
 
