@@ -6,7 +6,7 @@ import prettier from 'eslint-config-prettier';
 // Flat config (ESLint 9+). Prettier owns formatting; ESLint owns correctness.
 export default tseslint.config(
   // Never lint build output or deps.
-  { ignores: ['dist/**', 'node_modules/**'] },
+  { ignores: ['dist/**', 'release/**', 'node_modules/**'] },
 
   js.configs.recommended,
   ...tseslint.configs.recommended,
@@ -23,9 +23,9 @@ export default tseslint.config(
     },
   },
 
-  // Build/tooling config files run in Node.
+  // Build/tooling config files and release scripts run in Node.
   {
-    files: ['*.config.{js,ts}'],
+    files: ['*.config.{js,ts}', 'scripts/**/*.mjs'],
     languageOptions: {
       globals: { ...globals.node },
     },

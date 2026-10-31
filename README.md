@@ -65,16 +65,18 @@ watch build with hot-reload while iterating.
 
 ## Scripts
 
-| Script              | Description                       |
-| ------------------- | --------------------------------- |
-| `pnpm dev`          | Start Vite in watch mode with HMR |
-| `pnpm build`        | Build the extension into `dist/`  |
-| `pnpm typecheck`    | Type-check the project (no emit)  |
-| `pnpm test`         | Run the unit tests (Vitest) once  |
-| `pnpm test:watch`   | Run the tests in watch mode       |
-| `pnpm lint`         | Lint with ESLint                  |
-| `pnpm format`       | Format all files with Prettier    |
-| `pnpm format:check` | Check formatting without writing  |
+| Script                | Description                              |
+| --------------------- | ---------------------------------------- |
+| `pnpm dev`            | Start Vite in watch mode with HMR        |
+| `pnpm build`          | Build the extension into `dist/`         |
+| `pnpm package`        | Zip `dist/` reproducibly into `release/` |
+| `pnpm package:source` | Zip the committed source into `release/` |
+| `pnpm typecheck`      | Type-check the project (no emit)         |
+| `pnpm test`           | Run the unit tests (Vitest) once         |
+| `pnpm test:watch`     | Run the tests in watch mode              |
+| `pnpm lint`           | Lint with ESLint                         |
+| `pnpm format`         | Format all files with Prettier           |
+| `pnpm format:check`   | Check formatting without writing         |
 
 ## Testing
 
@@ -86,11 +88,25 @@ is documented — see [Permissions](#permissions)), the chain constants, and the
 keyring: vault encryption, account generation and import, lock/unlock and
 auto-lock.
 
+## Release packages
+
+[`BUILD.md`](BUILD.md) is the step-by-step guide to rebuild the store package
+from source (the instructions Mozilla's add-on review needs for bundled code).
+The build is reproducible: `pnpm build && pnpm package` always produces a
+byte-identical `release/cointrunk-wallet-<version>.zip`, and `pnpm
+package:source` produces the matching source archive.
+
 ## CI
 
 [GitHub Actions](.github/workflows/ci.yml) runs `typecheck`, `lint`,
 `format:check`, `test`, and `build` on every push and pull request; the job
 fails if any step fails, turning the PR check red.
+
+A separate [Reproducible build](.github/workflows/reproducible.yml) workflow
+rebuilds the extension from the source package in a fresh directory, following
+`BUILD.md`, and fails unless the zip's SHA-256 matches the checkout build. On
+pull requests it uploads both packages as the `cointrunk-release-<short-sha>`
+artifact.
 
 ### Trying a PR build
 

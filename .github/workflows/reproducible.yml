@@ -1,0 +1,81 @@
+name: Reproducible build
+
+# Proves the store package can be rebuilt byte-for-byte from the source package
+# (BUILD.md): build + package the checkout, then unpack `pnpm package:source` in
+# another directory, follow BUILD.md from scratch and compare the SHA-256 of the
+# two extension zips.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  reproducible:
+    name: rebuild from source package · compare hashes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+
+      - name: Build and package the checkout
+        id: first
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm package
+          pnpm package:source
+          zip=$(ls release/cointrunk-wallet-*.zip | grep -v -- '-source\.zip$')
+          echo "zip=$zip" >> "$GITHUB_OUTPUT"
+          echo "sha=$(sha256sum "$zip" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      # A fresh directory with no .git, node_modules or dist/: exactly what a
+      # store reviewer unpacks.
+      - name: Rebuild from the source package
+        id: second
+        run: |
+          rebuild="$RUNNER_TEMP/rebuild"
+          mkdir "$rebuild"
+          unzip -q release/cointrunk-wallet-*-source.zip -d "$rebuild"
+          cd "$rebuild"/cointrunk-wallet-*-source
+          pnpm install --frozen-lockfile
+          pnpm build
+          pnpm package
+          echo "sha=$(sha256sum "${{ steps.first.outputs.zip }}" | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
+
+      - name: Compare hashes
+        run: |
+          echo "checkout:       ${{ steps.first.outputs.sha }}"
+          echo "source package: ${{ steps.second.outputs.sha }}"
+          if [ "${{ steps.first.outputs.sha }}" != "${{ steps.second.outputs.sha }}" ]; then
+            echo "::error::The rebuild from the source package differs from the checkout build"
+            exit 1
+          fi
+          {
+            echo "### Reproducible build"
+            echo
+            echo "\`${{ steps.first.outputs.zip }}\` rebuilt from the source package with the same SHA-256:"
+            echo
+            echo "\`${{ steps.first.outputs.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # PR-only: the store zip + source package, ready for a submission dry run.
+      - name: Compute short commit SHA
+        if: github.event_name == 'pull_request'
+        id: short
+        run: echo "sha=$(cut -c1-7 <<< '${{ github.event.pull_request.head.sha }}')" >> "$GITHUB_OUTPUT"
+
+      - name: Upload release packages
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v7
+        with:
+          name: cointrunk-release-${{ steps.short.outputs.sha }}
+          path: release/
+          if-no-files-found: error
