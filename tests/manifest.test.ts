@@ -1,15 +1,43 @@
+/// <reference types="vite/client" />
 import { describe, expect, it } from 'vitest';
 import manifest from '../manifest.json';
+import permissionsDoc from '../docs/store/permissions.md?raw';
 
 // Every permission the manifest requests must be listed here AND justified in
-// the README "Permissions" section. Adding one without documenting it is a
-// store-review risk, so the suite fails until both places agree.
+// docs/store/permissions.md (the Chrome Web Store dashboard text). Adding one
+// without documenting it is a store-review risk, so the suite fails until both
+// places agree.
 const DOCUMENTED_PERMISSIONS: string[] = [
-  // Auto-lock on inactivity (BUS-18) — see the README "Permissions" table.
+  // Auto-lock on inactivity (BUS-18).
   'alarms',
-  // Lock on OS screen lock / sleep (BUS-50) — see the README "Permissions" table.
+  // Lock on OS screen lock / sleep (BUS-50).
   'idle',
+  // Encrypted vault + settings in chrome.storage.local (BUS-17, BUS-18).
+  'storage',
 ];
+
+// `chrome.*` namespaces an extension may call without declaring a permission.
+// Any other namespace the source calls must be requested in the manifest — so
+// a new API forces a deliberate permission (and justification) decision.
+const UNGATED_NAMESPACES = new Set(['runtime', 'i18n', 'action', 'extension']);
+
+const sourceFiles = import.meta.glob<string>('../src/**/*.{ts,tsx}', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+
+/** The `chrome.<namespace>` APIs the extension source calls (comments ignored). */
+function chromeNamespacesUsedInSource(): Set<string> {
+  const used = new Set<string>();
+  for (const source of Object.values(sourceFiles)) {
+    const code = source.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+    for (const match of code.matchAll(/\bchrome\.([a-zA-Z]+)\b/g)) {
+      used.add(match[1]);
+    }
+  }
+  return used;
+}
 
 describe('MV3 manifest invariants', () => {
   it('declares Manifest V3 with a name and a numeric version', () => {
@@ -34,6 +62,31 @@ describe('MV3 manifest invariants', () => {
 
   it('requests only documented permissions', () => {
     expect(manifest.permissions).toEqual(DOCUMENTED_PERMISSIONS);
+  });
+
+  it('justifies every requested permission in the store document', () => {
+    for (const permission of manifest.permissions) {
+      expect(permissionsDoc).toContain(`### \`${permission}\``);
+    }
+  });
+
+  // BUS-43: chrome.storage was used for the vault but never declared, which
+  // leaves `chrome.storage` undefined at runtime. Tie the manifest to the code
+  // in both directions: every gated API used is requested, and every requested
+  // permission is used (the minimal-set audit).
+  it('requests a permission for every gated chrome.* API the source calls', () => {
+    const gated = [...chromeNamespacesUsedInSource()].filter((ns) => !UNGATED_NAMESPACES.has(ns));
+    expect(gated.length).toBeGreaterThan(0);
+    for (const namespace of gated) {
+      expect(manifest.permissions).toContain(namespace);
+    }
+  });
+
+  it('requests no permission the source does not use', () => {
+    const used = [...chromeNamespacesUsedInSource()];
+    for (const permission of manifest.permissions) {
+      expect(used).toContain(permission);
+    }
   });
 
   it('requests no host access and no CSP override (no remote code)', () => {

@@ -32,4 +32,4 @@ only. Stefan loads the unpacked build in Chrome himself.
 ## Conventions
 
 - One Jira ticket = one branch = one draft PR into the parent branch (see the
-  `git-workflow` skill). Keep MV3 permissions minimal and documented inline.
+  `git-workflow` skill). Keep MV3 permissions minimal; justify each one in `docs/store/permissions.md`.
