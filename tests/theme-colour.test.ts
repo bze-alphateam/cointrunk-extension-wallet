@@ -4,13 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import {
-  contrastRatio,
-  mixColours,
-  readableOn,
-  relativeLuminance,
-  WCAG_AA_TEXT_CONTRAST,
-} from '../src/theme/colour';
+import { contrastRatio, mixColours, readableOn, WCAG_AA_TEXT_CONTRAST } from '../src/theme/colour';
 
 describe('mixColours (BUS-33)', () => {
   it('returns the endpoints at 0 and 1', () => {
@@ -33,10 +27,16 @@ describe('mixColours (BUS-33)', () => {
 
 describe('contrastRatio (BUS-33)', () => {
   it('spans 1 (same colour) to 21 (black on white)', () => {
-    expect(relativeLuminance('#000000')).toBe(0);
-    expect(relativeLuminance('#ffffff')).toBeCloseTo(1, 10);
     expect(contrastRatio('#123456', '#123456')).toBe(1);
     expect(contrastRatio('#000000', '#FFFFFF')).toBeCloseTo(21, 10);
+  });
+
+  it('weights green over red over blue, as WCAG luminance does', () => {
+    const onBlack = (hex: string) => contrastRatio(hex, '#000000');
+    expect(onBlack('#00ff00')).toBeGreaterThan(onBlack('#ff0000'));
+    expect(onBlack('#ff0000')).toBeGreaterThan(onBlack('#0000ff'));
+    // Pure green on black is (0.7152 + 0.05) / 0.05.
+    expect(onBlack('#00ff00')).toBeCloseTo(15.304, 3);
   });
 
   it('is symmetric', () => {

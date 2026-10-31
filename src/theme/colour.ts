@@ -45,7 +45,7 @@ export function mixColours(from: string, to: string, amount: number): string {
 }
 
 /** WCAG relative luminance of a `#RRGGBB` colour, 0 (black) .. 1 (white). */
-export function relativeLuminance(hex: string): number {
+function relativeLuminance(hex: string): number {
   const linear = (channel: number) => {
     const c = channel / 255;
     return c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;

@@ -33,24 +33,24 @@ import { DEFAULT_THEME_ID, getTheme } from './themes';
 import type { Palette, Theme, ThemeMode, Typography } from './tokens';
 
 /** How far `surface` moves from background towards text. */
-export const SURFACE_MIX = 0.06;
+const SURFACE_MIX = 0.06;
 /** How far `border` moves from background towards text. */
-export const BORDER_MIX = 0.15;
+const BORDER_MIX = 0.15;
 /** How far `textMuted` moves from text towards background (≈60% strength left). */
-export const MUTED_MIX = 0.4;
+const MUTED_MIX = 0.4;
 
 /** The id prefix of generated brand themes: `brand:<denom>`. */
-export const BRAND_THEME_ID_PREFIX = 'brand:';
+const BRAND_THEME_ID_PREFIX = 'brand:';
 
 const MODES: readonly ThemeMode[] = ['light', 'dark'];
 
 /** Whether one mode's text reads on its background at WCAG AA. */
-export function isReadable(colors: BrandingColors): boolean {
+function isReadable(colors: BrandingColors): boolean {
   return contrastRatio(colors.text, colors.background) >= WCAG_AA_TEXT_CONTRAST;
 }
 
 /** One mode's full palette from that mode's four brand colours. */
-export function brandPalette(colors: BrandingColors, mode: ThemeMode): Palette {
+function brandPalette(colors: BrandingColors, mode: ThemeMode): Palette {
   const { background, text, primary, secondary } = colors;
   return {
     background,
