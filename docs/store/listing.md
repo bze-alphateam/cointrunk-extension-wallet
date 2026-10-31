@@ -105,13 +105,17 @@ Layout and sizes are in [`graphics.md`](graphics.md#promo-tiles).
 - **Homepage URL:** `https://cointrunk.io`
 - **Support URL:** `https://github.com/bze-alphateam/cointrunk-extension-wallet/issues`
   until a dedicated support page exists.
-- **Privacy policy URL:** set by BUS-42 (privacy policy and data disclosures).
+- **Privacy policy URL:**
+  `https://github.com/bze-alphateam/cointrunk-extension-wallet/blob/main/docs/store/privacy-policy.md`
+  (the public policy, [`privacy-policy.md`](privacy-policy.md)). The rest of the
+  privacy answers are in [`privacy-declarations.md`](privacy-declarations.md).
 - **Tags (AMO):** `wallet`, `beezee`, `bze`, `cosmos`, `crypto`.
 - **Mature content (Chrome):** off.
 
 ## Before submitting
 
-- Add the privacy policy URL from BUS-42.
+- Fill in the privacy sections from
+  [`privacy-declarations.md`](privacy-declarations.md).
 - Capture the screenshots and produce the promo tiles listed in
   [`graphics.md`](graphics.md).
 - Upload everything in each store dashboard (BUS-46).
