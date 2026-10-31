@@ -184,6 +184,7 @@ export class ChainTransactionService implements TransactionService {
       if (error instanceof ChainOutcomeUnknownError) {
         throw new Error(
           `The network did not confirm the transaction in time. It may still go through — check ${hash} on the block explorer before sending again.`,
+          { cause: error },
         );
       }
       throw error;

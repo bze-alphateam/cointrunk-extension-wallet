@@ -108,7 +108,7 @@ export class RestTxChain implements TxChain {
       );
     } catch (error) {
       if (error instanceof ChainQueryError && error.status === 404) {
-        throw new Error(NO_ACCOUNT_MESSAGE);
+        throw new Error(NO_ACCOUNT_MESSAGE, { cause: error });
       }
       throw error;
     }
