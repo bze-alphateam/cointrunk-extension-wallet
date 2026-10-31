@@ -18,7 +18,7 @@ manifest.json        # MV3 manifest (source) — references source entry points
 vite.config.ts       # Vite + @crxjs/vite-plugin build config
 vitest.config.ts     # Vitest unit-test config (plain Node env)
 tests/               # unit tests (*.test.ts)
-public/icons/        # placeholder toolbar/store icons (16/32/48/128)
+public/icons/        # toolbar/store icons (16/32/48/128), CoinTrunk symbol
 src/background/       # background service worker source (index.ts)
 src/popup/           # toolbar popup (React): index.html, main.tsx, App.tsx
 dist/                # build output (git-ignored) — the loadable extension
