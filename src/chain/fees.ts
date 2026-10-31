@@ -18,10 +18,8 @@
  *    reads as `0n`), so it must be special-cased rather than run through the
  *    depth gate. "No active token yet" (`null`) is likewise always eligible:
  *    there is nothing to warn about.
- *  - **Distinct from the branding gate.** Branding (BUS-32) uses strictly
- *    greater-than the *full* threshold over the same inputs; fee-eligibility uses
- *    at-least. They can disagree exactly at `depth === threshold` (fee-eligible,
- *    not branded) — a deliberate, separate concern, as the ticket calls out.
+ *  - **Unrelated to branding.** Whether a token is branded depends only on its
+ *    on-chain branding package (BUS-32), never on liquidity.
  */
 
 import { BZE_BASE_DENOM } from './constants';
@@ -51,7 +49,7 @@ export const FEE_INELIGIBLE_REASON =
  * The pure gate: is `denom` an accepted fee token given its BZE-side LP `depth`
  * and the governance `threshold`? Native BZE (and "no token", `null`) is always
  * eligible; any other token needs `depth >= threshold`. See the module docs for
- * why this special-cases the native token and how it differs from branding.
+ * why this special-cases the native token.
  */
 export function isFeeTokenEligible(
   denom: string | null,

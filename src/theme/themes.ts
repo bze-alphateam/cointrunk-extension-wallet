@@ -2,11 +2,11 @@
  * The predefined themes shipped with the wallet, and lookup by id (BUS-29).
  *
  * `default` is the neutral skin the wallet falls back to whenever a token has
- * no brand of its own or fails the branding gate — it must always exist and is
+ * no valid on-chain branding — it must always exist and is
  * what {@link getTheme} returns for an unknown id (an invalid selection can
  * never leave the UI unstyled). `bze` and `midnight` are concrete examples of
  * the token structure carrying a real brand's light+dark palettes; the later
- * branding ticket will generate themes like these from external brand packages
+ * branding ticket will generate themes like these from on-chain branding packages
  * rather than hand-writing them.
  *
  * Typography, spacing and radii are shared across these predefined themes and

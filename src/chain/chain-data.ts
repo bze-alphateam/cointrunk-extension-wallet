@@ -3,7 +3,7 @@
  *
  * {@link CachedChainData} composes the individual chain reads — token identity
  * metadata (BUS-26), a token's BZE-side LP depth and the governance threshold
- * (BUS-27) — behind one facade, each wrapped in a {@link TtlCache}. It exposes
+ * (BUS-27), and a token's on-chain branding (BUS-32) — behind one facade, each wrapped in a {@link TtlCache}. It exposes
  * the same read methods as the underlying services, so callers get caching for
  * free without knowing it is there.
  *
@@ -12,19 +12,24 @@
  *  - **metadata** — a token's name/symbol/logo/decimals is near-immutable, so a
  *    long TTL; re-reading it every popup open would be pure waste.
  *  - **liquidity** — pool reserves move with every trade, so a short TTL keeps
- *    the branding / fee-token signal reasonably current.
+ *    the fee-token signal reasonably current.
  *  - **threshold** — a governance parameter that only changes via a passed
  *    proposal (a days-long process), so a long TTL.
+ *  - **branding** — set by the denom admin and rarely touched afterwards, so a
+ *    long TTL, though shorter than metadata so a re-brand shows up the same day.
  *
- * All three are still served stale rather than failing when the network is
- * down (see {@link TtlCache}), so the wallet degrades gracefully.
+ * All four are still served stale rather than failing when the network is
+ * down (see {@link TtlCache}), so the wallet degrades gracefully. Branding goes
+ * one step further: with nothing cached, an outage reads as "no branding" (the
+ * default skin) rather than an error, since branding never blocks the wallet.
  *
  * Invalidation on token switch: {@link CachedChainData.invalidateToken} drops
- * the metadata and liquidity entries for a denom so the newly-active token is
- * read fresh. The threshold is global — the same value for every token — so a
+ * the metadata, liquidity and branding entries for a denom so the
+ * newly-active token is read fresh. The threshold is global — the same value for every token — so a
  * token switch leaves it cached.
  */
 
+import { TokenfactoryBrandingService, type BrandingReader, type DenomBranding } from './branding';
 import { ChainClient } from './client';
 import { TradebinLiquidityService, type LiquidityService } from './liquidity';
 import { TokenMetadataService, type TokenIdentity } from './metadata';
@@ -39,6 +44,7 @@ export interface TokenIdentityReader {
 export interface ChainDataReaders {
   readonly metadata: TokenIdentityReader;
   readonly liquidity: LiquidityService;
+  readonly branding: BrandingReader;
 }
 
 /** Per-data-kind cache lifetimes, all overridable. */
@@ -46,6 +52,7 @@ export interface CacheTtls {
   readonly metadataTtlMs: number;
   readonly liquidityTtlMs: number;
   readonly thresholdTtlMs: number;
+  readonly brandingTtlMs: number;
 }
 
 /** Defaults chosen from each datum's real rate of change (see module docs). */
@@ -53,6 +60,7 @@ export const DEFAULT_CACHE_TTLS: CacheTtls = {
   metadataTtlMs: 24 * 60 * 60 * 1000, // 24h — identity is near-immutable
   liquidityTtlMs: 60 * 1000, //          60s — pool reserves move with trades
   thresholdTtlMs: 60 * 60 * 1000, //      1h — governance-set, rarely changes
+  brandingTtlMs: 60 * 60 * 1000, //       1h — admin-set, rarely changes
 };
 
 /** The threshold is global, so its cache holds a single entry under one key. */
@@ -66,13 +74,14 @@ export interface CachedChainDataOptions {
 }
 
 /**
- * Caches token metadata, LP liquidity, and the governance threshold behind one
- * read facade with per-kind TTLs and a stale-but-usable fallback.
+ * Caches token metadata, LP liquidity, the governance threshold and token
+ * branding behind one read facade with per-kind TTLs and a stale-but-usable fallback.
  */
 export class CachedChainData {
   private readonly metadataCache: TtlCache<TokenIdentity>;
   private readonly liquidityCache: TtlCache<bigint>;
   private readonly thresholdCache: TtlCache<bigint>;
+  private readonly brandingCache: TtlCache<DenomBranding | null>;
 
   constructor(readers: ChainDataReaders, options: CachedChainDataOptions = {}) {
     const ttls = { ...DEFAULT_CACHE_TTLS, ...options.ttls };
@@ -90,6 +99,10 @@ export class CachedChainData {
       ttlMs: ttls.thresholdTtlMs,
       now,
     });
+    this.brandingCache = new TtlCache((denom) => readers.branding.getBranding(denom), {
+      ttlMs: ttls.brandingTtlMs,
+      now,
+    });
   }
 
   /** Build a cache over the production chain services from a shared {@link ChainClient}. */
@@ -98,6 +111,7 @@ export class CachedChainData {
       {
         metadata: new TokenMetadataService(client),
         liquidity: new TradebinLiquidityService(client),
+        branding: new TokenfactoryBrandingService(client),
       },
       options,
     );
@@ -119,12 +133,22 @@ export class CachedChainData {
   }
 
   /**
-   * Drop a token's cached metadata and liquidity so it is re-read fresh — call
+   * A token's on-chain branding, cached for {@link CacheTtls.brandingTtlMs}, or
+   * `null` for none. Never rejects: an unreachable chain with nothing cached
+   * reads as `null` too, so the caller falls back to the default skin.
+   */
+  getBranding(denom: string): Promise<DenomBranding | null> {
+    return this.brandingCache.get(denom).catch(() => null);
+  }
+
+  /**
+   * Drop a token's cached metadata, liquidity and branding so it is re-read fresh — call
    * on token switch. The threshold is global and left cached.
    */
   invalidateToken(denom: string): void {
     this.metadataCache.invalidate(denom);
     this.liquidityCache.invalidate(denom);
+    this.brandingCache.invalidate(denom);
   }
 
   /** Drop everything, threshold included (e.g. on a manual "refresh all"). */
@@ -132,5 +156,6 @@ export class CachedChainData {
     this.metadataCache.clear();
     this.liquidityCache.clear();
     this.thresholdCache.clear();
+    this.brandingCache.clear();
   }
 }
