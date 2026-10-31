@@ -41,9 +41,8 @@ jobs:
       # PR-only: publish the built extension on the workflow run so a reviewer
       # can download it and "Load unpacked" without building anything locally.
       # Artifact downloads come as <name>.zip, so the names below yield
-      # cointrunk-{chrome,firefox}-<short-sha>.zip. Both artifacts share the
-      # same dist/ for now — Firefox-specific manifest tweaks (e.g.
-      # browser_specific_settings.gecko) come with a later ticket.
+      # cointrunk-{chrome,firefox}-<short-sha>.zip, one per browser build
+      # (dist/chrome/, dist/firefox/).
       - name: Compute short commit SHA
         if: github.event_name == 'pull_request'
         id: sha
@@ -54,7 +53,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: cointrunk-chrome-${{ steps.sha.outputs.short }}
-          path: dist/
+          path: dist/chrome/
           if-no-files-found: error
 
       - name: Upload Firefox build artifact
@@ -62,5 +61,5 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: cointrunk-firefox-${{ steps.sha.outputs.short }}
-          path: dist/
+          path: dist/firefox/
           if-no-files-found: error

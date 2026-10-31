@@ -11,6 +11,12 @@
  * signer, so the wallet naturally returns to `locked` after teardown; only the
  * non-secret vault (ciphertext + metadata) survives, in `chrome.storage`.
  * Keep this file side-effect-light and register listeners synchronously.
+ *
+ * Firefox runs this same module as an MV3 event page (`background.scripts`,
+ * see manifest.config.ts) rather than a service worker. It is unloaded when
+ * idle and woken by events just the same, so the notes above hold there too;
+ * the code relies on no service-worker-only globals, and Firefox serves the
+ * promise-based `chrome.*` APIs used here.
  */
 
 import { BankBalanceService } from '../chain/bank';

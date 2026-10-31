@@ -15,22 +15,31 @@ wallet for the [BeeZee (BZE)](https://getbze.com/) network. Public brand:
 
 ```
 manifest.json        # MV3 manifest (source) — references source entry points
+manifest.config.ts   # per-browser manifests derived from manifest.json
 vite.config.ts       # Vite + @crxjs/vite-plugin build config
 vitest.config.ts     # Vitest unit-test config (plain Node env)
 tests/               # unit tests (*.test.ts)
 public/icons/        # toolbar/store icons (16/32/48/128), CoinTrunk symbol
 src/background/       # background service worker source (index.ts)
 src/popup/           # toolbar popup (React): index.html, main.tsx, App.tsx
-dist/                # build output (git-ignored) — the loadable extension
+dist/                # build output (git-ignored): dist/chrome/, dist/firefox/
 ```
 
 The build uses [Vite](https://vite.dev/) with
 [`@crxjs/vite-plugin`](https://crxjs.dev/); the UI is built with
 [React](https://react.dev/). The **source** `manifest.json` references source
 files (e.g. `src/background/index.ts`, `src/popup/index.html`); crxjs bundles
-them and rewrites the paths in the emitted `dist/manifest.json`. `public/`
-assets are copied as-is, so the icons at `public/icons/*` end up at
-`dist/icons/*`.
+them and rewrites the paths in the emitted `dist/<browser>/manifest.json`.
+`public/` assets are copied as-is, so the icons at `public/icons/*` end up at
+`dist/<browser>/icons/*`.
+
+One source builds two extensions. `manifest.json` is the Chrome manifest;
+`manifest.config.ts` derives the Firefox one from it by moving the background
+module from `background.service_worker` to `background.scripts` (Firefox MV3
+runs it as an event page) and adding `browser_specific_settings.gecko` (the
+add-on id and the data collection declaration Mozilla requires). The Chrome
+manifest never gets that block. Everything else, including the bundled code,
+is the same in both builds.
 
 ## Permissions
 
@@ -56,35 +65,40 @@ manifest requests a permission the code never uses.
 ```bash
 corepack enable        # one-time: lets pnpm run from the pinned version
 pnpm install           # install dependencies
-pnpm build             # build the extension into dist/
+pnpm build             # build both browsers into dist/chrome/ and dist/firefox/
 ```
 
 Then load it in Chrome: open `chrome://extensions`, enable **Developer mode**,
-click **Load unpacked**, and select the `dist/` folder. Use `pnpm dev` for a
+click **Load unpacked**, and select the `dist/chrome/` folder. In Firefox, open
+`about:debugging#/runtime/this-firefox`, click **Load Temporary Add-on…** and
+select `dist/firefox/manifest.json`. Use `pnpm dev` for a
 watch build with hot-reload while iterating.
 
 ## Scripts
 
-| Script                | Description                              |
-| --------------------- | ---------------------------------------- |
-| `pnpm dev`            | Start Vite in watch mode with HMR        |
-| `pnpm build`          | Build the extension into `dist/`         |
-| `pnpm package`        | Zip `dist/` reproducibly into `release/` |
-| `pnpm package:source` | Zip the committed source into `release/` |
-| `pnpm typecheck`      | Type-check the project (no emit)         |
-| `pnpm test`           | Run the unit tests (Vitest) once         |
-| `pnpm test:watch`     | Run the tests in watch mode              |
-| `pnpm lint`           | Lint with ESLint                         |
-| `pnpm format`         | Format all files with Prettier           |
-| `pnpm format:check`   | Check formatting without writing         |
+| Script                | Description                                      |
+| --------------------- | ------------------------------------------------ |
+| `pnpm dev`            | Start Vite (Chrome build) in watch mode with HMR |
+| `pnpm build`          | Build both browsers into `dist/<browser>/`       |
+| `pnpm build:chrome`   | Build only Chrome into `dist/chrome/`            |
+| `pnpm build:firefox`  | Build only Firefox into `dist/firefox/`          |
+| `pnpm package`        | Zip each `dist/<browser>/` reproducibly          |
+| `pnpm package:source` | Zip the committed source into `release/`         |
+| `pnpm typecheck`      | Type-check the project (no emit)                 |
+| `pnpm test`           | Run the unit tests (Vitest) once                 |
+| `pnpm test:watch`     | Run the tests in watch mode                      |
+| `pnpm lint`           | Lint with ESLint                                 |
+| `pnpm format`         | Format all files with Prettier                   |
+| `pnpm format:check`   | Check formatting without writing                 |
 
 ## Testing
 
 Unit tests run with [Vitest](https://vitest.dev/) (`vitest.config.ts`, plain
 Node environment — the extension build plugins are not involved). Tests live in
 `tests/*.test.ts`; run them with `pnpm test`. The suite covers the MV3 manifest
-invariants (manifest version, entry points, and that every requested permission
-is documented — see [Permissions](#permissions)), the chain constants, and the
+invariants (manifest version, entry points, that every requested permission
+is documented — see [Permissions](#permissions) — and the per-browser
+differences), the chain constants, and the
 keyring: vault encryption, account generation and import, lock/unlock and
 auto-lock.
 
@@ -92,9 +106,10 @@ auto-lock.
 
 [`BUILD.md`](BUILD.md) is the step-by-step guide to rebuild the store package
 from source (the instructions Mozilla's add-on review needs for bundled code).
-The build is reproducible: `pnpm build && pnpm package` always produces a
-byte-identical `release/cointrunk-wallet-<version>.zip`, and `pnpm
-package:source` produces the matching source archive.
+The build is reproducible: `pnpm build && pnpm package` always produces
+byte-identical `release/cointrunk-wallet-<version>-chrome.zip` and
+`release/cointrunk-wallet-<version>-firefox.zip`, and `pnpm package:source`
+produces the matching source archive.
 
 ## CI
 
@@ -104,8 +119,8 @@ fails if any step fails, turning the PR check red.
 
 A separate [Reproducible build](.github/workflows/reproducible.yml) workflow
 rebuilds the extension from the source package in a fresh directory, following
-`BUILD.md`, and fails unless the zip's SHA-256 matches the checkout build. On
-pull requests it uploads both packages as the `cointrunk-release-<short-sha>`
+`BUILD.md`, and fails unless both zips' SHA-256 match the checkout build. On
+pull requests it uploads the packages as the `cointrunk-release-<short-sha>`
 artifact.
 
 ### Trying a PR build
@@ -115,15 +130,13 @@ artifacts, so a change can be tried without building locally:
 
 1. On the PR, open **Checks** (or the CI run) → the run's **Summary** page.
 2. Under **Artifacts**, download `cointrunk-chrome-<short-sha>.zip` or
-   `cointrunk-firefox-<short-sha>.zip` and unzip it.
+   `cointrunk-firefox-<short-sha>.zip` (the build for that browser) and unzip
+   it.
 3. **Chrome:** go to `chrome://extensions`, enable **Developer mode**, click
    **Load unpacked**, and select the unzipped folder.
    **Firefox:** go to `about:debugging#/runtime/this-firefox`, click **Load
    Temporary Add-on…**, and select the `manifest.json` inside the unzipped
    folder.
-
-The two artifacts are currently built from the same output; Firefox-specific
-manifest adjustments land in a later ticket.
 
 Formatting is handled by [Prettier](https://prettier.io/) (`.prettierrc.json`);
 linting by [ESLint](https://eslint.org/) flat config (`eslint.config.js`), with
