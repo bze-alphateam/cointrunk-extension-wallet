@@ -20,6 +20,7 @@
  */
 
 import type { Signer, VaultCrypto } from './crypto';
+import { createHdSigner } from './hd-signer';
 import {
   AES_GCM_PARAMS,
   PBKDF2_PARAMS,
@@ -199,28 +200,16 @@ export async function decryptMnemonic(vault: EncryptedVault, password: string): 
 }
 
 /**
- * Placeholder signing capability held while unlocked. In BUS-17 the vault
- * decrypts successfully — proving the password and flipping the keyring to
- * `unlocked` — but signing itself is Epic 3. Epic 3 replaces this with a signer
- * that retains the recovered seed and derives keys from it; retaining the seed
- * now would keep an unusable secret in memory for no benefit.
- */
-const unimplementedSigner: Signer = {
-  sign() {
-    return Promise.reject(new Error('signing not implemented yet (Epic 3)'));
-  },
-};
-
-/**
  * The concrete {@link VaultCrypto} the keyring is wired with (replacing the
  * BUS-49 `unavailableCrypto` stub). `encrypt` produces the persistable blob for
  * a new or imported account; `decrypt` recovers the mnemonic — which proves the
- * password via the GCM auth tag — and returns the in-memory signer.
+ * password via the GCM auth tag — and turns it straight into the real HD
+ * signer (BUS-51). The mnemonic lives on only inside that signer, which the
+ * keyring holds in service-worker memory while unlocked.
  */
 export const webCryptoVaultCrypto: VaultCrypto = {
   encrypt: encryptVault,
   async decrypt(vault: EncryptedVault, password: string): Promise<Signer> {
-    await decryptMnemonic(vault, password);
-    return unimplementedSigner;
+    return createHdSigner(await decryptMnemonic(vault, password));
   },
 };

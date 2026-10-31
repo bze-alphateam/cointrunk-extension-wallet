@@ -40,6 +40,7 @@
 
 import { ChainClient, ChainQueryError } from './client';
 import { BZE_BASE_DENOM } from './constants';
+import type { NativeReserves } from './send-fee';
 
 /** tradebin REST routes. See module docs for the confirmed response shapes. */
 const LIQUIDITY_POOL_PATH = '/bze/tradebin/liquidity_pool?pool_id=';
@@ -66,23 +67,48 @@ export interface LiquidityService {
 }
 
 /**
+ * Reads both reserves of a token's BZE-paired pool, for the spot price a token
+ * fee is converted at (BUS-51). `null` when the token has no pool with BZE.
+ */
+export interface PoolReservesReader {
+  getNativeReserves(denom: string): Promise<NativeReserves | null>;
+}
+
+/**
  * Queries the tradebin module over the REST API. Network/endpoint failures
  * propagate from {@link ChainClient} with user-readable messages; a missing
  * pool (404) degrades to `0n`, and a malformed response body throws rather
  * than silently reading a wrong depth.
  */
-export class TradebinLiquidityService implements LiquidityService {
+export class TradebinLiquidityService implements LiquidityService, PoolReservesReader {
   constructor(
     private readonly client: ChainClient,
     private readonly nativeDenom: string = BZE_BASE_DENOM,
   ) {}
 
   async getNativeDepth(denom: string): Promise<bigint> {
+    const pool = await this.getPool(denom);
+    // No pool for this pair is below threshold, not an error.
+    return pool === null ? 0n : nativeSideReserve(pool, this.nativeDenom);
+  }
+
+  async getNativeReserves(denom: string): Promise<NativeReserves | null> {
+    const pool = await this.getPool(denom);
+    if (pool === null) {
+      return null;
+    }
+    const native = nativeSideReserve(pool, this.nativeDenom);
+    const token = pool.base === this.nativeDenom ? pool.reserveQuote : pool.reserveBase;
+    return { native, token };
+  }
+
+  /** The token/BZE pool, or `null` when there is none (404, or the native token itself). */
+  private async getPool(denom: string): Promise<PoolReserves | null> {
     // The native token has no BZE-paired pool of its own; asking is meaningless
     // (the chain's own HasLiquidityWithNativeDenom returns false for this), so
     // skip the guaranteed-404 round trip.
     if (denom === this.nativeDenom) {
-      return 0n;
+      return null;
     }
 
     const poolId = nativePoolId(denom, this.nativeDenom);
@@ -91,12 +117,11 @@ export class TradebinLiquidityService implements LiquidityService {
       body = await this.client.getRest(LIQUIDITY_POOL_PATH + encodeURIComponent(poolId));
     } catch (error) {
       if (error instanceof ChainQueryError && error.status === 404) {
-        return 0n; // no pool for this pair — below threshold, not an error
+        return null;
       }
       throw error; // endpoint/network trouble is real trouble — surface it
     }
-
-    return nativeSideReserve(parsePoolResponse(body), this.nativeDenom);
+    return parsePoolResponse(body);
   }
 
   async getThreshold(): Promise<bigint> {

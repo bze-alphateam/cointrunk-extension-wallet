@@ -17,7 +17,8 @@ import { BankBalanceService } from '../chain/bank';
 import { CachedChainData } from '../chain/chain-data';
 import { ChainClient } from '../chain/client';
 import { LiquidityFeeEligibilityService } from '../chain/fees';
-import { UnavailableTransactionService } from '../chain/tx';
+import { ChainTransactionService } from '../chain/tx';
+import { RestTxChain } from '../chain/tx-chain';
 import { AutoLock, chromeAlarmScheduler } from '../keyring/autolock';
 import { Keyring } from '../keyring/keyring';
 import { handleKeyringRequest, type KeyringRequest } from '../keyring/messages';
@@ -26,8 +27,9 @@ import { ChromeVaultStore } from '../keyring/storage';
 import { webCryptoVaultCrypto } from '../keyring/vault-crypto';
 
 // PBKDF2 + AES-256-GCM encryption at rest (BUS-17). `decrypt` proves the
-// password via the GCM auth tag and unlocks the keyring; state and account
-// queries work whether locked or unlocked.
+// password via the GCM auth tag and hands the keyring the real HD signer
+// (BUS-51), held only in this worker's memory until lock, auto-lock or
+// teardown; state and account queries work whether locked or unlocked.
 const keyring = new Keyring(new ChromeVaultStore(), webCryptoVaultCrypto);
 const settings = new ChromeSettingsStore();
 const autoLock = new AutoLock(keyring, settings, chromeAlarmScheduler);
@@ -43,14 +45,22 @@ const balance = new BankBalanceService(chainClient);
 // Shared by the fee-eligibility gate, the token switcher's identities and the
 // popup's branded skin (BUS-33).
 const chainData = CachedChainData.fromClient(chainClient);
-// Likewise a placeholder for signing & broadcasting a send (BUS-22): it rejects
-// until Epic 4 wires the RPC client, so the send flow exercises its failure
-// state. The full form → review → confirm path above the seam is real.
-const transactions = new UnavailableTransactionService();
 // The real fee-token eligibility check (BUS-38): is the active token's BZE-side
 // LP deep enough to pay fees with? Reads the cached depth + threshold; native
 // BZE is always eligible. Replaces the BUS-23 placeholder.
 const feeEligibility = new LiquidityFeeEligibilityService(chainData);
+// Signing & broadcasting a send (BUS-51), replacing the BUS-22 placeholder:
+// simulate for gas, pick the fee coin, sign with the keyring (which refuses
+// while locked) and broadcast over REST, never re-broadcasting to a second
+// node once one may have taken the tx.
+const transactions = new ChainTransactionService({
+  chain: new RestTxChain(chainClient),
+  signer: keyring,
+  balances: balance,
+  feeEligibility,
+  reserves: chainData,
+  tokens: chainData,
+});
 
 // Popup ↔ background message bridge. `handleKeyringRequest` never throws, and
 // returning `true` keeps the message channel open for the async `sendResponse`.

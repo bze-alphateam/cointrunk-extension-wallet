@@ -67,16 +67,33 @@ describe('BankBalanceService (BUS-25)', () => {
       ]),
     ]);
 
-    await expect(new BankBalanceService(client).getBalance(ADDRESS)).resolves.toEqual({
+    await expect(
+      new BankBalanceService(client).getBalance(ADDRESS, BZE_BASE_DENOM),
+    ).resolves.toEqual({
       denom: BZE_BASE_DENOM,
       amount: '1234567',
     });
   });
 
+  it('picks out a non-native active token by denom (BUS-51)', async () => {
+    const { client } = clientFor([
+      page([
+        { denom: 'factory/bze1abc/utok', amount: '7' },
+        { denom: 'ubze', amount: '1234567' },
+      ]),
+    ]);
+
+    await expect(
+      new BankBalanceService(client).getBalance(ADDRESS, 'factory/bze1abc/utok'),
+    ).resolves.toEqual({ denom: 'factory/bze1abc/utok', amount: '7' });
+  });
+
   it('treats an account with no balances as zero, not an error', async () => {
     const { client } = clientFor([page([])]);
 
-    await expect(new BankBalanceService(client).getBalance(ADDRESS)).resolves.toEqual({
+    await expect(
+      new BankBalanceService(client).getBalance(ADDRESS, BZE_BASE_DENOM),
+    ).resolves.toEqual({
       denom: BZE_BASE_DENOM,
       amount: '0',
     });
@@ -85,7 +102,9 @@ describe('BankBalanceService (BUS-25)', () => {
   it('treats a missing active-token entry as zero, keeping other denoms intact', async () => {
     const { client } = clientFor([page([{ denom: 'factory/bze1abc/utok', amount: '7' }])]);
 
-    await expect(new BankBalanceService(client).getBalance(ADDRESS)).resolves.toEqual({
+    await expect(
+      new BankBalanceService(client).getBalance(ADDRESS, BZE_BASE_DENOM),
+    ).resolves.toEqual({
       denom: BZE_BASE_DENOM,
       amount: '0',
     });

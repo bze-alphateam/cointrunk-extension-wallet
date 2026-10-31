@@ -1,3 +1,6 @@
+import { Secp256k1, Secp256k1Signature, sha256 } from '@cosmjs/crypto';
+import { fromBase64 } from '@cosmjs/encoding';
+import { makeSignBytes } from '@cosmjs/proto-signing';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { decryptMnemonic, encryptVault, webCryptoVaultCrypto } from '../src/keyring/vault-crypto';
 import {
@@ -7,6 +10,7 @@ import {
   type EncryptedVault,
   type VaultAccount,
 } from '../src/keyring/vault';
+import { SIGN_REQUEST } from './support/services';
 
 const MNEMONIC = 'legal winner thank year wave sausage worth useful legal winner thank yellow';
 const PASSWORD = 'correct horse battery staple';
@@ -77,11 +81,24 @@ describe('webCryptoVaultCrypto seam', () => {
     vault = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS);
   });
 
-  it('decrypt proves the password and returns an in-memory signer', async () => {
+  it('decrypt proves the password and returns the real HD signer (BUS-51)', async () => {
     const signer = await webCryptoVaultCrypto.decrypt(vault, PASSWORD);
-    expect(typeof signer.sign).toBe('function');
-    // Signing itself is Epic 3; the signer rejects until then.
-    await expect(signer.sign({ payload: 'x' })).rejects.toThrow('Epic 3');
+    const pubkey = await signer.getPublicKey();
+    const { signed, signature } = await signer.sign(SIGN_REQUEST);
+
+    // The signature verifies against the account's public key over the sign bytes.
+    const valid = await Secp256k1.verifySignature(
+      Secp256k1Signature.fromFixedLength(fromBase64(signature.signature)),
+      sha256(makeSignBytes(signed)),
+      pubkey,
+    );
+    expect(valid).toBe(true);
+  });
+
+  it('exposes no key material on the signer object — only its two methods', async () => {
+    const signer = await webCryptoVaultCrypto.decrypt(vault, PASSWORD);
+    expect(Object.keys(signer).sort()).toEqual(['getPublicKey', 'sign']);
+    expect(JSON.stringify(signer)).not.toContain('legal');
   });
 
   it('decrypt rejects a wrong password (auth-tag failure)', async () => {

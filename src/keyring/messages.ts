@@ -3,7 +3,9 @@
  *
  * The popup is untrusted UI: it sends a {@link KeyringRequest} and receives a
  * {@link KeyringResponse} carrying only non-secret data (lock status, account
- * metadata, signing results). Key material never crosses this boundary.
+ * metadata, fee quotes, tx hashes). Key material never crosses this boundary,
+ * and neither does a raw signing capability: the only thing the popup can get
+ * signed is a send the background builds itself (BUS-51).
  *
  * Both sides import these shared types. The background wires
  * {@link handleKeyringRequest} into `chrome.runtime.onMessage`; the popup calls
@@ -15,10 +17,17 @@ import type { BrandingReader, DenomBranding } from '../chain/branding';
 import { selectStickyActiveDenom, type ActiveTokenState } from '../chain/active-token-selection';
 import { validateRecipientAddress } from '../chain/address';
 import type { TokenIdentityReader } from '../chain/chain-data';
+import { BZE_BASE_DENOM } from '../chain/constants';
 import type { FeeEligibilityService, FeeTokenEligibility } from '../chain/fees';
 import type { TokenIdentity } from '../chain/metadata';
-import type { SendRequest, TransactionService, TxResult } from '../chain/tx';
-import type { SignRequest } from './crypto';
+import type {
+  ConfirmedSendRequest,
+  SendParams,
+  SendQuote,
+  SendRequest,
+  TransactionService,
+  TxResult,
+} from '../chain/tx';
 import type { CreatedAccount, Keyring, KeyringState } from './keyring';
 import {
   assertValidActiveTokenDenom,
@@ -58,6 +67,15 @@ export interface HeldToken {
   readonly identity: TokenIdentity;
 }
 
+/**
+ * The active token's balance, with the identity the popup formats it with
+ * (BUS-51): decimals and symbol come from the token's cached chain metadata,
+ * never from the native-token constants.
+ */
+export interface ActiveBalance extends Balance {
+  readonly identity: TokenIdentity;
+}
+
 /** Every request the popup can send. Discriminated by `type`. */
 export type KeyringRequest =
   | { readonly type: 'getState' }
@@ -76,12 +94,12 @@ export type KeyringRequest =
   | { readonly type: 'setActiveToken'; readonly denom: string }
   | { readonly type: 'getHeldTokens' }
   | { readonly type: 'getBranding'; readonly denom: string }
-  | { readonly type: 'send'; readonly request: SendRequest }
+  | { readonly type: 'quoteSend'; readonly request: SendRequest }
+  | { readonly type: 'send'; readonly request: ConfirmedSendRequest }
   | { readonly type: 'checkFeeEligibility' }
   | { readonly type: 'getSettings' }
   | { readonly type: 'setAutoLockMinutes'; readonly minutes: number }
-  | { readonly type: 'setTokenSwitchingEnabled'; readonly enabled: boolean }
-  | { readonly type: 'sign'; readonly request: SignRequest };
+  | { readonly type: 'setTokenSwitchingEnabled'; readonly enabled: boolean };
 
 /** Success payload for each request type. */
 export interface KeyringResponseData {
@@ -97,8 +115,8 @@ export interface KeyringResponseData {
   unlock: KeyringState;
   lock: KeyringState;
   getAccounts: readonly VaultAccount[];
-  /** The active token's balance, in base units — see {@link Balance}. */
-  getBalance: Balance;
+  /** The active token's balance, in base units, plus its identity — see {@link ActiveBalance}. */
+  getBalance: ActiveBalance;
   /** The resolved sticky active token (denom or null) — see {@link ActiveTokenState}. */
   getActiveToken: ActiveTokenState;
   /** The now-active token after a deliberate switch (its denom) — see {@link ActiveTokenState}. */
@@ -107,6 +125,8 @@ export interface KeyringResponseData {
   getHeldTokens: readonly HeldToken[];
   /** A token's validated branding package, or null (default skin). */
   getBranding: DenomBranding | null;
+  /** The review step's fee for a send, or why it is blocked — see {@link SendQuote}. */
+  quoteSend: SendQuote;
   /** The broadcast result (tx hash) of a send — see {@link TxResult}. */
   send: TxResult;
   /** Re-checked fee-token eligibility for the active account (Epic 7 hook). */
@@ -114,7 +134,6 @@ export interface KeyringResponseData {
   getSettings: WalletSettings;
   setAutoLockMinutes: WalletSettings;
   setTokenSwitchingEnabled: WalletSettings;
-  sign: unknown;
 }
 
 /**
@@ -166,6 +185,36 @@ async function resolveActiveDenom(
 }
 
 /**
+ * Resolve a popup send request into {@link SendParams} — the shared front half
+ * of `quoteSend` and `send`. The background owns the sending address (the
+ * active account) and the denom (the active token), so the popup can never
+ * spend from an arbitrary account or send a token it didn't show; the
+ * popup's denom only has to match. The recipient and amount are re-validated
+ * here too — the popup already checks them, but the background is the trust
+ * boundary — before anything reaches the signer.
+ */
+async function resolveSend(
+  keyring: Keyring,
+  settings: SettingsStore,
+  balance: BalanceService,
+  request: SendRequest,
+): Promise<SendParams> {
+  const [account] = await keyring.getAccounts();
+  if (!account) {
+    throw new Error('no account to send from');
+  }
+  const toAddress = validateRecipientAddress(request.toAddress);
+  if (!/^\d+$/u.test(request.amount) || BigInt(request.amount) <= 0n) {
+    throw new Error('Amount must be greater than zero.');
+  }
+  const denom = (await resolveActiveDenom(keyring, settings, balance)) ?? BZE_BASE_DENOM;
+  if (request.denom !== denom) {
+    throw new Error('The active token changed — go back and review the send again.');
+  }
+  return { from: account.address, toAddress, amount: request.amount, denom };
+}
+
+/**
  * Route a request to the keyring and wrap the outcome in a {@link KeyringResponse}.
  * Never throws: rejections become `{ ok: false, error }` so the popup always gets
  * a well-formed reply.
@@ -194,11 +243,18 @@ export async function handleKeyringRequest(
       case 'getBalance': {
         // The background owns whose balance this is: the popup asks "my balance"
         // and never gets to name an address, so it can't query an arbitrary one.
+        // It is the active token's balance (BUS-51), BZE when none is chosen
+        // yet, returned with the identity the popup formats it with.
         const [account] = await keyring.getAccounts();
         if (!account) {
           throw new Error('no account to query a balance for');
         }
-        return { ok: true, data: await balance.getBalance(account.address) };
+        const denom = (await resolveActiveDenom(keyring, settings, balance)) ?? BZE_BASE_DENOM;
+        const [held, identity] = await Promise.all([
+          balance.getBalance(account.address, denom),
+          tokens.getTokenIdentity(denom),
+        ]);
+        return { ok: true, data: { ...held, identity } };
       }
       case 'getActiveToken': {
         // Resolve the sticky active token (BUS-34): a chosen denom stays put with
@@ -242,25 +298,17 @@ export async function handleKeyringRequest(
         assertValidActiveTokenDenom(request.denom);
         return { ok: true, data: await branding.getBranding(request.denom) };
       }
+      case 'quoteSend': {
+        // The review step (BUS-51): simulate the send and pick its fee coin and
+        // amount. Needs the unlocked signer's public key, so it fails while locked.
+        const params = await resolveSend(keyring, settings, balance, request.request);
+        return { ok: true, data: await transactions.quote(params) };
+      }
       case 'send': {
-        // Same trust boundary as getBalance: the background owns the sending
-        // address (the active account), so the popup can never spend from an
-        // arbitrary one. The recipient is re-validated here — the popup already
-        // validates it, but the background is the trust boundary — before the
-        // request reaches the signer.
-        const [account] = await keyring.getAccounts();
-        if (!account) {
-          throw new Error('no account to send from');
-        }
-        const toAddress = validateRecipientAddress(request.request.toAddress);
-        return {
-          ok: true,
-          data: await transactions.send({
-            from: account.address,
-            toAddress,
-            amount: request.request.amount,
-          }),
-        };
+        // Confirm: sign locally with the in-memory signer (the keyring refuses
+        // while locked) and broadcast, paying the fee the user reviewed.
+        const params = await resolveSend(keyring, settings, balance, request.request);
+        return { ok: true, data: await transactions.send(params, request.request.fee) };
       }
       case 'checkFeeEligibility': {
         // Re-check whether the *active token* can pay fees (BUS-38): resolve the
@@ -293,8 +341,6 @@ export async function handleKeyringRequest(
         await settings.save(updated);
         return { ok: true, data: updated };
       }
-      case 'sign':
-        return { ok: true, data: await keyring.sign(request.request) };
       default:
         return assertNever(request);
     }

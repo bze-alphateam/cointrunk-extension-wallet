@@ -31,9 +31,14 @@
 
 import { TokenfactoryBrandingService, type BrandingReader, type DenomBranding } from './branding';
 import { ChainClient } from './client';
-import { TradebinLiquidityService, type LiquidityService } from './liquidity';
+import {
+  TradebinLiquidityService,
+  type LiquidityService,
+  type PoolReservesReader,
+} from './liquidity';
 import { TokenMetadataService, type TokenIdentity } from './metadata';
 import { TtlCache } from './cache';
+import type { NativeReserves } from './send-fee';
 
 /** Reads a token's display identity — the subset of {@link TokenMetadataService} used here. */
 export interface TokenIdentityReader {
@@ -45,6 +50,8 @@ export interface ChainDataReaders {
   readonly metadata: TokenIdentityReader;
   readonly liquidity: LiquidityService;
   readonly branding: BrandingReader;
+  /** Both pool reserves, for a token fee's spot conversion (BUS-51). */
+  readonly reserves: PoolReservesReader;
 }
 
 /** Per-data-kind cache lifetimes, all overridable. */
@@ -80,6 +87,7 @@ export interface CachedChainDataOptions {
 export class CachedChainData {
   private readonly metadataCache: TtlCache<TokenIdentity>;
   private readonly liquidityCache: TtlCache<bigint>;
+  private readonly reservesCache: TtlCache<NativeReserves | null>;
   private readonly thresholdCache: TtlCache<bigint>;
   private readonly brandingCache: TtlCache<DenomBranding | null>;
 
@@ -95,6 +103,10 @@ export class CachedChainData {
       ttlMs: ttls.liquidityTtlMs,
       now,
     });
+    this.reservesCache = new TtlCache((denom) => readers.reserves.getNativeReserves(denom), {
+      ttlMs: ttls.liquidityTtlMs,
+      now,
+    });
     this.thresholdCache = new TtlCache(() => readers.liquidity.getThreshold(), {
       ttlMs: ttls.thresholdTtlMs,
       now,
@@ -107,11 +119,13 @@ export class CachedChainData {
 
   /** Build a cache over the production chain services from a shared {@link ChainClient}. */
   static fromClient(client: ChainClient, options: CachedChainDataOptions = {}): CachedChainData {
+    const liquidity = new TradebinLiquidityService(client);
     return new CachedChainData(
       {
         metadata: new TokenMetadataService(client),
-        liquidity: new TradebinLiquidityService(client),
+        liquidity,
         branding: new TokenfactoryBrandingService(client),
+        reserves: liquidity,
       },
       options,
     );
@@ -125,6 +139,14 @@ export class CachedChainData {
   /** A token's BZE-side LP depth, cached for {@link CacheTtls.liquidityTtlMs}. */
   getNativeDepth(denom: string): Promise<bigint> {
     return this.liquidityCache.get(denom);
+  }
+
+  /**
+   * Both reserves of a token's BZE-paired pool (or `null`, no pool), cached for
+   * the liquidity TTL like the depth, since they move with the same trades.
+   */
+  getNativeReserves(denom: string): Promise<NativeReserves | null> {
+    return this.reservesCache.get(denom);
   }
 
   /** The global governance threshold, cached for {@link CacheTtls.thresholdTtlMs}. */
@@ -148,6 +170,7 @@ export class CachedChainData {
   invalidateToken(denom: string): void {
     this.metadataCache.invalidate(denom);
     this.liquidityCache.invalidate(denom);
+    this.reservesCache.invalidate(denom);
     this.brandingCache.invalidate(denom);
   }
 
@@ -155,6 +178,7 @@ export class CachedChainData {
   invalidateAll(): void {
     this.metadataCache.clear();
     this.liquidityCache.clear();
+    this.reservesCache.clear();
     this.thresholdCache.clear();
     this.brandingCache.clear();
   }

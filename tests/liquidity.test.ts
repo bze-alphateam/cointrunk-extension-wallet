@@ -161,3 +161,30 @@ describe('TradebinLiquidityService.getThreshold (BUS-27)', () => {
     );
   });
 });
+
+describe('TradebinLiquidityService.getNativeReserves (BUS-51)', () => {
+  it('returns both reserves, whichever side ubze is on', async () => {
+    const quoteSide = serviceFor(VDL_POOL).service;
+    await expect(quoteSide.getNativeReserves(VDL_DENOM)).resolves.toEqual({
+      native: 1621873097554n,
+      token: 2089767774136n,
+    });
+
+    const baseSide = serviceFor({
+      pool: { ...VDL_POOL.pool, base: 'ubze', quote: VDL_DENOM },
+    }).service;
+    await expect(baseSide.getNativeReserves(VDL_DENOM)).resolves.toEqual({
+      native: 2089767774136n,
+      token: 1621873097554n,
+    });
+  });
+
+  it('is null for a token with no BZE pool, and for ubze itself', async () => {
+    await expect(serviceFor(NOT_FOUND, 404).service.getNativeReserves(VDL_DENOM)).resolves.toBe(
+      null,
+    );
+    const { service, urls } = serviceFor(VDL_POOL);
+    await expect(service.getNativeReserves('ubze')).resolves.toBeNull();
+    expect(urls).toEqual([]);
+  });
+});

@@ -8,11 +8,10 @@
  * opens, that is exactly "refresh on popup open" (BUS-19) with no extra plumbing.
  */
 
-import { useEffect, useRef, useState } from 'react';
-import type { Balance } from '../../chain/balance';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { FEE_INELIGIBLE_REASON } from '../../chain/fees';
-import { ACTIVE_TOKEN, formatTokenAmount } from '../../chain/token';
-import type { HeldToken } from '../../keyring/messages';
+import { formatTokenAmount } from '../../chain/token';
+import type { ActiveBalance, HeldToken } from '../../keyring/messages';
 import type { KeyringState } from '../../keyring/keyring';
 import { applyActiveSkin } from '../activeSkin';
 import { copyText } from '../clipboard';
@@ -39,7 +38,7 @@ function shortenAddress(address: string): string {
 export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: HomeProps) {
   const [account] = state.accounts;
   const [error, setError] = useState<string | null>(null);
-  const [balance, setBalance] = useState<Balance | null>(null);
+  const [balance, setBalance] = useState<ActiveBalance | null>(null);
   const [balanceError, setBalanceError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -55,22 +54,28 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
   const [feeWarning, setFeeWarning] = useState<string | null>(null);
   const [feeWarningDismissed, setFeeWarningDismissed] = useState(false);
 
-  useEffect(() => {
-    let cancelled = false;
+  // The active token's balance, formatted with its own decimals and symbol
+  // (BUS-51). Loaded on open and again after a token switch.
+  const loadBalance = useCallback((isCancelled: () => boolean = () => false) => {
     request({ type: 'getBalance' })
       .then((loaded) => {
-        if (cancelled) return;
+        if (isCancelled()) return;
         setBalance(loaded);
         setBalanceError(null);
       })
       .catch((cause: unknown) => {
-        if (cancelled) return;
+        if (isCancelled()) return;
         setBalanceError(cause instanceof Error ? cause.message : 'Could not load balance.');
       });
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    loadBalance(() => cancelled);
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [loadBalance]);
 
   // Load the switcher's inputs on open: the toggle, the active denom, and (only
   // when switching is on) the held-token list. Failures leave the switcher
@@ -135,6 +140,7 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
       const active = await request({ type: 'setActiveToken', denom });
       setActiveDenom(active.denom);
       void applyActiveSkin(active.denom);
+      loadBalance();
       setFeeWarningDismissed(false);
       await refreshFeeWarning();
     } catch {
@@ -178,8 +184,8 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
           <p className="balance__error">{balanceError}</p>
         ) : balance ? (
           <p className="balance__amount">
-            {formatTokenAmount(balance.amount, ACTIVE_TOKEN.decimals)}
-            <span className="balance__denom">{ACTIVE_TOKEN.displayDenom}</span>
+            {formatTokenAmount(balance.amount, balance.identity.decimals)}
+            <span className="balance__denom">{balance.identity.symbol}</span>
           </p>
         ) : (
           <p className="balance__loading">Loading balance…</p>

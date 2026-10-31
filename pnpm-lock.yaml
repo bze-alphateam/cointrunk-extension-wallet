@@ -35,6 +35,9 @@ importers:
       '@fontsource/space-grotesk':
         specifier: 5.3.0
         version: 5.3.0
+      cosmjs-types:
+        specifier: 0.11.0
+        version: 0.11.0
       qr:
         specifier: ^0.6.0
         version: 0.6.0

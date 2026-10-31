@@ -9,21 +9,26 @@
  * keyring knowing any crypto details.
  */
 
+import type { DirectSignResponse } from '@cosmjs/proto-signing';
+import type { SignDoc } from 'cosmjs-types/cosmos/tx/v1beta1/tx';
 import type { EncryptedVault, VaultAccount } from './vault';
 
-/** A signing request payload. Real fields (chain message, sign-doc) arrive in Epic 3. */
+/** A `SIGN_MODE_DIRECT` signing request: the sign doc to sign (BUS-51). */
 export interface SignRequest {
-  readonly payload?: unknown;
+  readonly signDoc: SignDoc;
 }
 
 /**
  * The decrypted, in-memory signing capability. Held by the keyring ONLY while
  * unlocked and dropped on lock / auto-lock / service-worker teardown. It wraps
- * the secret key material, which never leaves the background service worker.
- * The concrete implementation (real signing) lands in Epic 3.
+ * the secret key material, which never leaves the background service worker:
+ * callers get a public key and signatures, never the key or the mnemonic.
  */
 export interface Signer {
-  sign(request: SignRequest): Promise<unknown>;
+  /** The account's compressed secp256k1 public key (33 bytes), for the tx's signer info. */
+  getPublicKey(): Promise<Uint8Array>;
+  /** Sign a sign doc for the wallet's account. */
+  sign(request: SignRequest): Promise<DirectSignResponse>;
 }
 
 /**

@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import type { Signer, VaultCrypto } from '../src/keyring/crypto';
 import { Keyring } from '../src/keyring/keyring';
 import { handleKeyringRequest, type KeyringRequest } from '../src/keyring/messages';
-import { services } from './support/services';
+import { SIGN_REQUEST, services } from './support/services';
 import { ChromeVaultStore, VAULT_STORAGE_KEY, type VaultStore } from '../src/keyring/storage';
 import type { EncryptedVault } from '../src/keyring/vault';
 
@@ -30,7 +30,11 @@ class MemoryStore implements VaultStore {
 }
 
 const fakeSigner: Signer = {
-  sign: async (request) => ({ signed: true, request }),
+  getPublicKey: async () => new Uint8Array(33).fill(2),
+  sign: async ({ signDoc }) => ({
+    signed: signDoc,
+    signature: { pub_key: { type: 'tendermint/PubKeySecp256k1', value: '' }, signature: 'c2ln' },
+  }),
 };
 
 /**
@@ -179,15 +183,20 @@ describe('Keyring state machine', () => {
     expect(state.status).toBe('locked');
   });
 
-  it('gates signing on unlock', async () => {
+  it('gates signing and the public key on unlock', async () => {
     const keyring = new Keyring(new MemoryStore(VAULT), okCrypto);
-    await expect(keyring.sign({ payload: 'x' })).rejects.toThrow('locked');
+    await expect(keyring.sign(SIGN_REQUEST)).rejects.toThrow('locked');
+    await expect(keyring.getPublicKey()).rejects.toThrow('locked');
 
     await keyring.unlock('correct horse');
-    await expect(keyring.sign({ payload: 'x' })).resolves.toEqual({
-      signed: true,
-      request: { payload: 'x' },
+    await expect(keyring.sign(SIGN_REQUEST)).resolves.toMatchObject({
+      signed: SIGN_REQUEST.signDoc,
+      signature: { signature: 'c2ln' },
     });
+    await expect(keyring.getPublicKey()).resolves.toHaveLength(33);
+
+    await keyring.lock();
+    await expect(keyring.sign(SIGN_REQUEST)).rejects.toThrow('locked');
   });
 });
 
@@ -263,12 +272,15 @@ describe('handleKeyringRequest', () => {
     });
   });
 
-  it('reports the locked guard when signing while locked', async () => {
+  it('offers the popup no raw signing request (BUS-51)', async () => {
+    // The popup can only get a send signed that the background builds itself.
     const keyring = new Keyring(new MemoryStore(VAULT), okCrypto);
-    expect(await handleKeyringRequest(services(keyring), { type: 'sign', request: {} })).toEqual({
-      ok: false,
-      error: 'locked',
-    });
+    await keyring.unlock('correct horse');
+    const response = await handleKeyringRequest(services(keyring), {
+      type: 'sign',
+      request: SIGN_REQUEST,
+    } as unknown as KeyringRequest);
+    expect(response.ok).toBe(false);
   });
 
   it('rejects an unknown request type', async () => {
