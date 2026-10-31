@@ -150,13 +150,36 @@ export async function encryptVault(
 }
 
 /**
+ * Refuse a vault this build cannot read. The blob is versioned and
+ * self-describing precisely so a future format can change the scheme; reading a
+ * newer or foreign blob as if it were v1 would run the wrong KDF/cipher and then
+ * misreport the result as a wrong password (BUS-41 audit). The check looks only
+ * at non-secret metadata, so the error carries nothing sensitive.
+ */
+function assertSupportedVault(vault: EncryptedVault): void {
+  const { iterations } = vault.kdf;
+  if (
+    vault.version !== VAULT_VERSION ||
+    vault.kdf.algo !== PBKDF2_PARAMS.algo ||
+    vault.kdf.hash !== PBKDF2_PARAMS.hash ||
+    vault.cipher.algo !== AES_GCM_PARAMS.algo ||
+    !Number.isSafeInteger(iterations) ||
+    iterations <= 0
+  ) {
+    throw new Error('unsupported vault format');
+  }
+}
+
+/**
  * Recover the mnemonic from a vault using `password`. Re-derives the key from
  * the persisted salt + KDF params and AES-GCM-decrypts; the GCM auth-tag check
  * is what proves the password. A wrong password (or tampered blob) makes
  * WebCrypto reject — surfaced here as a generic, non-secret `invalid password`
- * so no detail about the failure leaks.
+ * so no detail about the failure leaks. A vault in a format this build does not
+ * know is rejected first, as `unsupported vault format`.
  */
 export async function decryptMnemonic(vault: EncryptedVault, password: string): Promise<string> {
+  assertSupportedVault(vault);
   const key = await deriveAesKey(password, base64ToBytes(vault.kdf.salt), {
     iterations: vault.kdf.iterations,
     hash: vault.kdf.hash,

@@ -11,8 +11,10 @@
  *  1. Only ciphertext is persisted — never a plaintext mnemonic or private key.
  *  2. Decrypted secrets live only in the background service-worker memory, only
  *     while unlocked; cleared on lock, auto-lock, and service-worker teardown.
- *  3. Secrets never cross into the popup, page, or content-script context, and
- *     are never logged, put in error messages, or placed in URLs.
+ *  3. Secrets never cross into the page or content-script context, and are
+ *     never logged, put in error messages, or placed in URLs. The popup receives
+ *     secret material exactly once — the new mnemonic in the `createAccount`
+ *     reply, for the backup screen (the Security Model's bounded exception).
  *  4. A correct password is proven by a successful AES-GCM decrypt (auth-tag
  *     check) — no separate password hash is ever stored.
  *

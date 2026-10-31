@@ -88,3 +88,31 @@ describe('webCryptoVaultCrypto seam', () => {
     await expect(webCryptoVaultCrypto.decrypt(vault, 'nope')).rejects.toThrow('invalid password');
   });
 });
+
+describe('vault format guard (BUS-41)', () => {
+  let vault: EncryptedVault;
+
+  beforeAll(async () => {
+    vault = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS);
+  });
+
+  // Each case is a blob this v1 build must refuse to read rather than run the
+  // wrong KDF/cipher on and misreport as a wrong password — even with the right
+  // password.
+  const unsupported: [string, (v: EncryptedVault) => unknown][] = [
+    ['a newer vault version', (v) => ({ ...v, version: VAULT_VERSION + 1 })],
+    ['a different KDF', (v) => ({ ...v, kdf: { ...v.kdf, algo: 'argon2id' } })],
+    ['a different PBKDF2 hash', (v) => ({ ...v, kdf: { ...v.kdf, hash: 'SHA-1' } })],
+    ['a different cipher', (v) => ({ ...v, cipher: { ...v.cipher, algo: 'aes-256-ctr' } })],
+    ['a zero iteration count', (v) => ({ ...v, kdf: { ...v.kdf, iterations: 0 } })],
+    ['a non-integer iteration count', (v) => ({ ...v, kdf: { ...v.kdf, iterations: 1.5 } })],
+  ];
+
+  it.each(unsupported)('rejects %s as an unsupported format', async (_label, mutate) => {
+    const blob = mutate(vault) as EncryptedVault;
+    await expect(decryptMnemonic(blob, PASSWORD)).rejects.toThrow('unsupported vault format');
+    await expect(webCryptoVaultCrypto.decrypt(blob, PASSWORD)).rejects.toThrow(
+      'unsupported vault format',
+    );
+  });
+});
