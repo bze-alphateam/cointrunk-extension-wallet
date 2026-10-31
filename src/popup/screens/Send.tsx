@@ -1,14 +1,16 @@
 /**
- * Send screen (BUS-22): enter recipient + amount, review with the fee, then
- * confirm to sign & broadcast.
+ * Send screen (BUS-22): enter recipient + amount of the active token, review
+ * with the real fee, then confirm to sign & broadcast.
  *
- * The screen holds no key material and does no signing: on confirm it sends a
- * `send` message and the background resolves the sending account, signs, and
- * broadcasts (today via the Epic-4 placeholder, which rejects — surfacing the
- * failure state). Validation that CAN be done here — a well-formed `bze`
- * recipient and an amount that fits the balance plus fee — is done here so the
- * user gets immediate, specific feedback before the review step, and re-checked
- * in the background as the trust boundary.
+ * The screen holds no key material and does no signing. Review asks the
+ * background for a `quoteSend` (simulated gas, fee coin and amount, BUS-51);
+ * confirm sends a `send` with the fee the user saw, and the background resolves
+ * the sending account and token, signs locally and broadcasts. Amounts are
+ * parsed and shown with the active token's own decimals and symbol (from its
+ * chain metadata), never the native-token constants. Validation that CAN be
+ * done here — a well-formed `bze` recipient and an amount that fits the
+ * balance — is done here so the user gets immediate, specific feedback, and
+ * re-checked in the background as the trust boundary.
  *
  * The success/failure result rendering is deliberately minimal here; BUS-23
  * enriches it with the explorer link and the fee-token re-check hook.
@@ -16,32 +18,41 @@
 
 import { useEffect, useState, type FormEvent } from 'react';
 import { validateRecipientAddress } from '../../chain/address';
-import type { Balance } from '../../chain/balance';
+import { BZE_BASE_DENOM, BZE_DISPLAY_DECIMALS, BZE_DISPLAY_DENOM } from '../../chain/constants';
 import { txExplorerUrl } from '../../chain/explorer';
 import { FEE_INELIGIBLE_REASON } from '../../chain/fees';
-import { ACTIVE_TOKEN, formatTokenAmount, parseTokenAmount } from '../../chain/token';
-import { DEFAULT_SEND_FEE, type TxResult } from '../../chain/tx';
+import { formatTokenAmount, parseTokenAmount } from '../../chain/token';
+import type { TxFee, TxResult } from '../../chain/tx';
+import type { ActiveBalance } from '../../keyring/messages';
 import { request } from '../keyringClient';
 import { useClipboardCopy } from '../useCopy';
+import { FeeWarning } from './FeeWarning';
 
 interface SendProps {
   readonly onClose: () => void;
 }
 
 /** Where the user is in the flow. `result` covers both success and failure. */
-type Step = 'form' | 'review' | 'sending' | 'result';
+type Step = 'form' | 'quoting' | 'review' | 'sending' | 'result';
 
-/** A validated send, ready to broadcast: recipient + amount in base units. */
+/** A validated, quoted send, ready to broadcast: recipient, amount in base units, fee. */
 interface PreparedSend {
   readonly toAddress: string;
   readonly amount: string;
+  readonly fee: TxFee;
 }
 
-const { decimals, displayDenom } = ACTIVE_TOKEN;
+/** How to render an amount of a denom: decimals and symbol. */
+interface Display {
+  readonly decimals: number;
+  readonly symbol: string;
+}
 
-/** `amount + fee`, both base-unit strings, as a base-unit string. */
-function withFee(amount: string): string {
-  return (BigInt(amount) + BigInt(DEFAULT_SEND_FEE.amount)).toString();
+/** The native token's display, for a BZE fee on a non-BZE send. */
+const BZE_DISPLAY: Display = { decimals: BZE_DISPLAY_DECIMALS, symbol: BZE_DISPLAY_DENOM };
+
+function show(amount: string, display: Display): string {
+  return `${formatTokenAmount(amount, display.decimals)} ${display.symbol}`;
 }
 
 export function Send({ onClose }: SendProps) {
@@ -51,7 +62,9 @@ export function Send({ onClose }: SendProps) {
   const [formError, setFormError] = useState<string | null>(null);
   const [prepared, setPrepared] = useState<PreparedSend | null>(null);
 
-  const [balance, setBalance] = useState<Balance | null>(null);
+  const [balance, setBalance] = useState<ActiveBalance | null>(null);
+  // Set when the quote said the active token can't pay the fee (BUS-51).
+  const [feeBlocked, setFeeBlocked] = useState<string | null>(null);
   const [balanceError, setBalanceError] = useState<string | null>(null);
 
   const [result, setResult] = useState<TxResult | null>(null);
@@ -82,37 +95,70 @@ export function Send({ onClose }: SendProps) {
     };
   }, []);
 
-  /** Validate the form and move to review, or surface a specific error. */
-  function review(event: FormEvent) {
+  const token: Display | null = balance
+    ? { decimals: balance.identity.decimals, symbol: balance.identity.symbol }
+    : null;
+
+  /** The display for the fee's denom: the active token's, or BZE's. */
+  function feeDisplay(fee: TxFee): Display {
+    if (balance && fee.denom === balance.denom && token) return token;
+    return fee.denom === BZE_BASE_DENOM ? BZE_DISPLAY : { decimals: 0, symbol: fee.denom };
+  }
+
+  /**
+   * Validate the form, ask the background for the fee, and move to review — or
+   * surface a specific error (or the fee warning, when the active token can't
+   * pay the fee and there is no BZE to pay it with).
+   */
+  async function review(event: FormEvent) {
     event.preventDefault();
     setFormError(null);
+    setFeeBlocked(null);
     try {
       const toAddress = validateRecipientAddress(recipient);
-      const base = parseTokenAmount(amount, decimals);
-      if (!balance) {
+      if (!balance || !token) {
         throw new Error(balanceError ?? 'Your balance is still loading — try again in a moment.');
       }
-      if (BigInt(withFee(base)) > BigInt(balance.amount)) {
-        throw new Error(
-          `Not enough ${displayDenom} — the amount plus the network fee is more than your balance.`,
-        );
+      const base = parseTokenAmount(amount, token.decimals);
+      if (BigInt(base) > BigInt(balance.amount)) {
+        throw new Error(`Not enough ${token.symbol} — the amount is more than your balance.`);
       }
-      setPrepared({ toAddress, amount: base });
+      setStep('quoting');
+      const quote = await request({
+        type: 'quoteSend',
+        request: { toAddress, amount: base, denom: balance.denom },
+      });
+      if (quote.status === 'blocked') {
+        if (quote.feeIneligible) {
+          setFeeBlocked(quote.reason);
+        } else {
+          setFormError(quote.reason);
+        }
+        setStep('form');
+        return;
+      }
+      setPrepared({ toAddress, amount: base, fee: quote.fee });
       setStep('review');
     } catch (cause) {
       setFormError(cause instanceof Error ? cause.message : 'Check the recipient and amount.');
+      setStep('form');
     }
   }
 
   /** Broadcast the prepared send; both outcomes land on the `result` step. */
   async function confirm() {
-    if (!prepared) return;
+    if (!prepared || !balance) return;
     setSendError(null);
     setStep('sending');
     try {
       const res = await request({
         type: 'send',
-        request: { toAddress: prepared.toAddress, amount: prepared.amount },
+        request: {
+          toAddress: prepared.toAddress,
+          amount: prepared.amount,
+          denom: balance.denom,
+          fee: prepared.fee,
+        },
       });
       setResult(res);
     } catch (cause) {
@@ -151,17 +197,18 @@ export function Send({ onClose }: SendProps) {
     }
   }
 
-  const available = balance
-    ? `${formatTokenAmount(balance.amount, decimals)} ${displayDenom}`
-    : null;
+  const available = balance && token ? show(balance.amount, token) : null;
+  const symbol = token?.symbol ?? BZE_DISPLAY_DENOM;
 
   return (
     <section className="screen">
-      <h1 className="screen__title">Send {displayDenom}</h1>
+      <h1 className="screen__title">Send {symbol}</h1>
+
+      {step === 'quoting' && <p className="screen__body">Estimating the network fee…</p>}
 
       {step === 'form' && (
         <>
-          <form className="form" onSubmit={review}>
+          <form className="form" onSubmit={(event) => void review(event)}>
             <label className="form__label" htmlFor="recipient">
               Recipient address
             </label>
@@ -171,7 +218,7 @@ export function Send({ onClose }: SendProps) {
               type="text"
               spellCheck={false}
               autoComplete="off"
-              placeholder={`${displayDenom.toLowerCase()}1…`}
+              placeholder="bze1…"
               value={recipient}
               onChange={(event) => setRecipient(event.target.value)}
             />
@@ -194,6 +241,7 @@ export function Send({ onClose }: SendProps) {
             </p>
 
             {formError && <p className="form__error">{formError}</p>}
+            {feeBlocked && <FeeWarning reason={feeBlocked} onDismiss={() => setFeeBlocked(null)} />}
 
             <button className="button" type="submit">
               Review
@@ -206,7 +254,7 @@ export function Send({ onClose }: SendProps) {
         </>
       )}
 
-      {step === 'review' && prepared && (
+      {step === 'review' && prepared && token && (
         <>
           <dl className="review">
             <div className="review__row">
@@ -215,20 +263,20 @@ export function Send({ onClose }: SendProps) {
             </div>
             <div className="review__row">
               <dt className="review__label">Amount</dt>
-              <dd className="review__value">
-                {formatTokenAmount(prepared.amount, decimals)} {displayDenom}
-              </dd>
+              <dd className="review__value">{show(prepared.amount, token)}</dd>
             </div>
             <div className="review__row">
               <dt className="review__label">Network fee</dt>
               <dd className="review__value">
-                {formatTokenAmount(DEFAULT_SEND_FEE.amount, decimals)} {displayDenom}
+                {show(prepared.fee.amount, feeDisplay(prepared.fee))}
               </dd>
             </div>
             <div className="review__row review__row--total">
               <dt className="review__label">Total</dt>
               <dd className="review__value">
-                {formatTokenAmount(withFee(prepared.amount), decimals)} {displayDenom}
+                {prepared.fee.denom === balance?.denom
+                  ? show((BigInt(prepared.amount) + BigInt(prepared.fee.amount)).toString(), token)
+                  : `${show(prepared.amount, token)} + ${show(prepared.fee.amount, feeDisplay(prepared.fee))}`}
               </dd>
             </div>
           </dl>
@@ -270,7 +318,7 @@ export function Send({ onClose }: SendProps) {
         ) : (
           <div className="result">
             <p className="result__title result__title--success">Transaction sent</p>
-            <p className="screen__body">Your {displayDenom} is on its way.</p>
+            <p className="screen__body">Your {symbol} is on its way.</p>
 
             {result?.hash && (
               <>

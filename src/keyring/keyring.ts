@@ -15,6 +15,7 @@
  */
 
 import { assertValidMnemonic, deriveAccount, generateMnemonic, normalizeMnemonic } from './account';
+import type { DirectSignResponse } from '@cosmjs/proto-signing';
 import type { SignRequest, Signer, VaultCrypto } from './crypto';
 import type { VaultStore } from './storage';
 import type { VaultAccount } from './vault';
@@ -51,7 +52,7 @@ export interface CreatedAccount {
   readonly state: KeyringState;
 }
 
-export class Keyring {
+export class Keyring implements Signer {
   /**
    * The decrypted signer. Present ONLY while unlocked; held in service-worker
    * memory and never persisted, logged, or sent across the popup boundary.
@@ -173,14 +174,26 @@ export class Keyring {
   }
 
   /**
-   * Sign a payload. Gated on unlock: throws while locked so no operation needing
-   * key material can proceed. The actual signing is implemented in Epic 3 by the
-   * concrete {@link Signer}.
+   * The unlocked account's public key. Gated on unlock like {@link sign}, so a
+   * send can't even be prepared while locked.
    */
-  async sign(request: SignRequest): Promise<unknown> {
+  async getPublicKey(): Promise<Uint8Array> {
+    return this.unlockedSigner().getPublicKey();
+  }
+
+  /**
+   * Sign a sign doc (BUS-51). Gated on unlock: throws while locked so no
+   * operation needing key material can proceed. The keyring is the only
+   * {@link Signer} the transaction service sees, so this gate covers every send.
+   */
+  async sign(request: SignRequest): Promise<DirectSignResponse> {
+    return this.unlockedSigner().sign(request);
+  }
+
+  private unlockedSigner(): Signer {
     if (!this.signer) {
       throw new Error('locked');
     }
-    return this.signer.sign(request);
+    return this.signer;
   }
 }

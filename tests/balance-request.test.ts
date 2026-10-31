@@ -10,7 +10,12 @@ import { Keyring } from '../src/keyring/keyring';
 import { handleKeyringRequest } from '../src/keyring/messages';
 import { sanitizeVault, type VaultStore } from '../src/keyring/storage';
 import { webCryptoVaultCrypto } from '../src/keyring/vault-crypto';
-import { FakeBalanceService, services } from './support/services';
+import {
+  FakeBalanceService,
+  FakeTokenIdentityReader,
+  MemorySettingsStore,
+  services,
+} from './support/services';
 
 const PASSWORD = 'correct horse battery staple';
 
@@ -41,8 +46,35 @@ describe('getBalance request (BUS-19)', () => {
       type: 'getBalance',
     });
 
-    expect(response).toEqual({ ok: true, data: { denom: 'ubze', amount: '1234567' } });
+    expect(response).toEqual({
+      ok: true,
+      data: {
+        denom: 'ubze',
+        amount: '1234567',
+        identity: { denom: 'ubze', name: 'ubze', symbol: 'ubze', decimals: 0, logoUri: null },
+      },
+    });
     expect(balance.queriedAddress).toBe(address);
+    // No active token chosen and nothing held: BZE.
+    expect(balance.queriedDenom).toBe('ubze');
+  });
+
+  it("returns the active token's balance with its own decimals and symbol (BUS-51)", async () => {
+    const { keyring } = await keyringWithAccount();
+    const denom = 'factory/bze1abc/uvdl';
+    const settings = new MemorySettingsStore();
+    await settings.save({ ...settings.settings, activeTokenDenom: denom });
+    const balance = new FakeBalanceService({ denom, amount: '42000' });
+    const vdl = { denom, name: 'Vidulum', symbol: 'VDL', decimals: 3, logoUri: null };
+    const tokens = new FakeTokenIdentityReader({ [denom]: vdl });
+
+    const response = await handleKeyringRequest(
+      services(keyring, settings, balance, undefined, undefined, tokens),
+      { type: 'getBalance' },
+    );
+
+    expect(response).toEqual({ ok: true, data: { denom, amount: '42000', identity: vdl } });
+    expect(balance.queriedDenom).toBe(denom);
   });
 
   it('fails cleanly when there is no account yet — the service is never called', async () => {

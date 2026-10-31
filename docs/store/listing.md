@@ -46,9 +46,6 @@ Paste the same text into both stores. Chrome renders it as plain text (line
 breaks kept, no Markdown), so the bullets are `•` characters; AMO shows it the
 same way.
 
-The paragraph marked **PLACEHOLDER** must be replaced before anything is
-submitted (see [Before submitting](#before-submitting)).
-
 ```text
 CoinTrunk Wallet is a browser-extension wallet for the BeeZee (BZE) network. It lives in your toolbar and keeps everyday payments simple: check your balance, send tokens, and receive them with a QR code.
 
@@ -71,7 +68,7 @@ A skin is decoration only:
 • Anyone can create and brand a token on BeeZee. A familiar name or logo is not proof of who issued a token, so check the token before you trust it.
 
 SECURITY
-[PLACEHOLDER — BUS-41: paste the store version of the public security / non-custodial statement drafted under BUS-41 in docs/store/ here. Do not publish the listing until this paragraph is replaced.]
+CoinTrunk Wallet is non-custodial: your recovery phrase is created on your device, encrypted with your password, and never leaves it. Transactions are signed on your device. We never see your keys and cannot move your funds. The wallet locks itself when you step away, and all of its code ships inside the extension.
 
 PERMISSIONS
 CoinTrunk Wallet asks for three permissions, none of which shows an install warning: storage (your encrypted wallet and settings), alarms (the auto-lock timer) and idle (locking when your screen locks). It has no access to the websites you visit and runs no remote code.
@@ -114,7 +111,6 @@ Layout and sizes are in [`graphics.md`](graphics.md#promo-tiles).
 
 ## Before submitting
 
-- Replace the **SECURITY** placeholder with BUS-41's statement.
 - Add the privacy policy URL from BUS-42.
 - Capture the screenshots and produce the promo tiles listed in
   [`graphics.md`](graphics.md).

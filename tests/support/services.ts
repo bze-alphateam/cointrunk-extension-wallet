@@ -8,7 +8,15 @@ import type { BrandingReader, DenomBranding } from '../../src/chain/branding';
 import type { TokenIdentityReader } from '../../src/chain/chain-data';
 import type { FeeEligibilityService, FeeTokenEligibility } from '../../src/chain/fees';
 import type { TokenIdentity } from '../../src/chain/metadata';
-import type { SendParams, TransactionService, TxResult } from '../../src/chain/tx';
+import { makeSignDoc } from '@cosmjs/proto-signing';
+import type {
+  SendParams,
+  SendQuote,
+  TransactionService,
+  TxFee,
+  TxResult,
+} from '../../src/chain/tx';
+import type { SignRequest } from '../../src/keyring/crypto';
 import type { Keyring } from '../../src/keyring/keyring';
 import type { KeyringServices } from '../../src/keyring/messages';
 import {
@@ -43,6 +51,7 @@ export class MemorySettingsStore implements SettingsStore {
  */
 export class FakeBalanceService implements BalanceService {
   queriedAddress: string | null = null;
+  queriedDenom: string | null = null;
   allQueriedAddress: string | null = null;
 
   constructor(
@@ -50,8 +59,9 @@ export class FakeBalanceService implements BalanceService {
     private readonly all: Balance[] | Error = [],
   ) {}
 
-  getBalance = async (address: string): Promise<Balance> => {
+  getBalance = async (address: string, denom: string): Promise<Balance> => {
     this.queriedAddress = address;
+    this.queriedDenom = denom;
     if (this.result instanceof Error) {
       throw this.result;
     }
@@ -67,17 +77,40 @@ export class FakeBalanceService implements BalanceService {
   };
 }
 
+/** A minimal, well-formed sign doc, for tests that only care whether signing is allowed. */
+export const SIGN_REQUEST: SignRequest = {
+  signDoc: makeSignDoc(new Uint8Array(), new Uint8Array(), 'beezee-1', 0),
+};
+
+/** The fee {@link FakeTransactionService} quotes by default. */
+export const QUOTED_FEE: TxFee = { amount: '2600', denom: 'ubze', gas: '260000' };
+
 /**
- * `TransactionService` double that records the params it was called with and
- * returns a fixed result — or rejects, to exercise the send failure path.
+ * `TransactionService` double that records the params (and confirmed fee) it
+ * was called with and returns a fixed quote / result — or rejects, to exercise
+ * the failure paths.
  */
 export class FakeTransactionService implements TransactionService {
   lastParams: SendParams | null = null;
+  lastFee: TxFee | null = null;
+  quotedParams: SendParams | null = null;
 
-  constructor(private readonly result: TxResult | Error = { hash: 'DEADBEEF' }) {}
+  constructor(
+    private readonly result: TxResult | Error = { hash: 'DEADBEEF' },
+    private readonly quoteResult: SendQuote | Error = { status: 'ready', fee: QUOTED_FEE },
+  ) {}
 
-  send = async (params: SendParams): Promise<TxResult> => {
+  quote = async (params: SendParams): Promise<SendQuote> => {
+    this.quotedParams = params;
+    if (this.quoteResult instanceof Error) {
+      throw this.quoteResult;
+    }
+    return this.quoteResult;
+  };
+
+  send = async (params: SendParams, fee: TxFee): Promise<TxResult> => {
     this.lastParams = params;
+    this.lastFee = fee;
     if (this.result instanceof Error) {
       throw this.result;
     }

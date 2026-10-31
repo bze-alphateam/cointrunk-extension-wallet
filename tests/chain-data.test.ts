@@ -31,12 +31,14 @@ function readers() {
   const getNativeDepth = vi.fn(async (denom: string): Promise<bigint> => (denom ? 100n : 0n));
   const getThreshold = vi.fn(async () => 42n);
   const getBranding = vi.fn(async (): Promise<DenomBranding | null> => BRANDING);
+  const getNativeReserves = vi.fn(async () => ({ native: 100n, token: 50n }));
   return {
-    spies: { getTokenIdentity, getNativeDepth, getThreshold, getBranding },
+    spies: { getTokenIdentity, getNativeDepth, getThreshold, getBranding, getNativeReserves },
     readers: {
       metadata: { getTokenIdentity },
       liquidity: { getNativeDepth, getThreshold },
       branding: { getBranding },
+      reserves: { getNativeReserves },
     },
   };
 }
@@ -78,6 +80,24 @@ describe('CachedChainData (BUS-28)', () => {
     expect(spies.getNativeDepth).toHaveBeenCalledTimes(2); // liquidity expired
     expect(spies.getTokenIdentity).toHaveBeenCalledTimes(1); // metadata still fresh
     expect(spies.getThreshold).toHaveBeenCalledTimes(1); // threshold still fresh
+  });
+
+  it('caches both pool reserves on the liquidity TTL, dropped on token switch (BUS-51)', async () => {
+    const clock = fakeClock();
+    const { spies, readers: r } = readers();
+    const data = new CachedChainData(r, { now: clock.now });
+
+    await expect(data.getNativeReserves('uvdl')).resolves.toEqual({ native: 100n, token: 50n });
+    await data.getNativeReserves('uvdl');
+    expect(spies.getNativeReserves).toHaveBeenCalledTimes(1);
+
+    clock.advance(DEFAULT_CACHE_TTLS.liquidityTtlMs);
+    await data.getNativeReserves('uvdl');
+    expect(spies.getNativeReserves).toHaveBeenCalledTimes(2);
+
+    data.invalidateToken('uvdl');
+    await data.getNativeReserves('uvdl');
+    expect(spies.getNativeReserves).toHaveBeenCalledTimes(3);
   });
 
   it('honours TTL overrides', async () => {
@@ -158,6 +178,7 @@ describe('CachedChainData (BUS-28)', () => {
         metadata: { getTokenIdentity },
         liquidity: { getNativeDepth, getThreshold },
         branding: { getBranding: async () => null },
+        reserves: { getNativeReserves: async () => null },
       },
       { now: clock.now },
     );

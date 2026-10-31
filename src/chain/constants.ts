@@ -64,20 +64,11 @@ export const BZE_DISPLAY_DECIMALS = 6;
 export const BZE_HD_PATH = `m/${BIP44_PURPOSE}'/${BZE_COIN_TYPE}'/0'/0/0`;
 
 /**
- * Gas limit for a v1 native `bank` Send. A single-message send comfortably fits
- * under 200k gas on a Cosmos SDK chain; v1 uses this fixed limit rather than
- * simulating gas (dynamic simulation is a later data-layer concern, Epic 4).
+ * Gas limit for a send when simulation fails (BUS-51). A single-message bank
+ * send comfortably fits under 200k gas on a Cosmos SDK chain; normally the
+ * wallet simulates and uses `ceil(gasUsed × 1.3)` instead.
  */
 export const DEFAULT_SEND_GAS = '200000';
-
-/**
- * Flat fee for a v1 send, in base units (`ubze`). `200000` gas at a
- * `0.01 ubze` minimum gas price is `2000 ubze` (0.002 BZE) — a conservative,
- * user-visible default shown on the review step. It is deliberately a constant,
- * not a chain query: like the balance and broadcast, real fee/gas estimation is
- * wired in Epic 4; this keeps the review step honest and complete until then.
- */
-export const DEFAULT_SEND_FEE_AMOUNT = '2000';
 
 /**
  * Block-explorer base URL for BeeZee mainnet. The public BZE apps

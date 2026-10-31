@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   ChainClient,
+  ChainOutcomeUnknownError,
   ChainQueryError,
   ChainUnavailableError,
   DEFAULT_ENDPOINTS,
@@ -126,5 +127,69 @@ describe('ChainClient (BUS-24)', () => {
     expect(DEFAULT_ENDPOINTS.rpc[0]).toBe('https://rpc.getbze.com');
     expect(DEFAULT_ENDPOINTS.rest.length).toBeGreaterThanOrEqual(2);
     expect(DEFAULT_ENDPOINTS.rpc.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+describe('ChainClient POST + broadcast (BUS-51)', () => {
+  const timeout = (): Error => Object.assign(new Error('timed out'), { name: 'TimeoutError' });
+
+  it('postRest falls back like a GET (simulate is idempotent)', async () => {
+    const { fetchFn, urls } = fakeFetch([timeout(), json({}, 503), json({ gas: '1' })]);
+    const client = new ChainClient({ endpoints: ENDPOINTS, fetchFn });
+
+    await expect(client.postRest('/sim', { a: 1 })).resolves.toEqual({ gas: '1' });
+    expect(urls).toHaveLength(3);
+  });
+
+  it('sends a JSON POST body', async () => {
+    let init: RequestInit | undefined;
+    const fetchFn = (async (_input: RequestInfo | URL, given?: RequestInit) => {
+      init = given;
+      return json({ ok: true });
+    }) as typeof fetch;
+    const client = new ChainClient({ endpoints: ENDPOINTS, fetchFn });
+
+    await client.broadcastRest('/txs', { tx_bytes: 'AA==' });
+    expect(init?.method).toBe('POST');
+    expect(init?.body).toBe('{"tx_bytes":"AA=="}');
+  });
+
+  it('broadcast stops at the first node that answers — an accepted tx is never re-sent', async () => {
+    const { fetchFn, urls } = fakeFetch([json({ tx_response: { code: 0 } }), json({})]);
+    const client = new ChainClient({ endpoints: ENDPOINTS, fetchFn });
+
+    await expect(client.broadcastRest('/txs', {})).resolves.toEqual({ tx_response: { code: 0 } });
+    expect(urls).toEqual(['https://rest-a.example/txs']);
+  });
+
+  it('broadcast falls back only when an endpoint is unreachable (connection error, 502, 503)', async () => {
+    const { fetchFn, urls } = fakeFetch([
+      new TypeError('fetch failed'),
+      json({}, 502),
+      json({ tx_response: { code: 0 } }),
+    ]);
+    const client = new ChainClient({ endpoints: ENDPOINTS, fetchFn });
+
+    await expect(client.broadcastRest('/txs', {})).resolves.toEqual({ tx_response: { code: 0 } });
+    expect(urls).toHaveLength(3);
+  });
+
+  it.each<[string, Scripted]>([
+    ['a timeout', timeout()],
+    ['a 504', json({}, 504)],
+    ['a 500', json({}, 500)],
+  ])('broadcast does not fall back after %s — the node may have the tx', async (_label, first) => {
+    const { fetchFn, urls } = fakeFetch([first, json({ tx_response: { code: 0 } })]);
+    const client = new ChainClient({ endpoints: ENDPOINTS, fetchFn });
+
+    await expect(client.broadcastRest('/txs', {})).rejects.toBeInstanceOf(ChainOutcomeUnknownError);
+    expect(urls).toEqual(['https://rest-a.example/txs']);
+  });
+
+  it('broadcast reports every endpoint unreachable as unavailable', async () => {
+    const { fetchFn } = fakeFetch([json({}, 503), json({}, 503), json({}, 503)]);
+    const client = new ChainClient({ endpoints: ENDPOINTS, fetchFn });
+
+    await expect(client.broadcastRest('/txs', {})).rejects.toBeInstanceOf(ChainUnavailableError);
   });
 });

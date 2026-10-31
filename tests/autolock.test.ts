@@ -21,7 +21,7 @@ import {
 import type { VaultStore } from '../src/keyring/storage';
 import { webCryptoVaultCrypto } from '../src/keyring/vault-crypto';
 import type { EncryptedVault } from '../src/keyring/vault';
-import { MemorySettingsStore, services } from './support/services';
+import { MemorySettingsStore, SIGN_REQUEST, services } from './support/services';
 
 const PASSWORD = 'correct horse battery staple';
 
@@ -181,7 +181,7 @@ describe('AutoLock.onAlarm (BUS-18)', () => {
     await keyring.unlock(PASSWORD);
 
     await autoLock.onAlarm(AUTO_LOCK_ALARM);
-    await expect(keyring.sign({ payload: 'x' })).rejects.toThrow('locked');
+    await expect(keyring.sign(SIGN_REQUEST)).rejects.toThrow('locked');
   });
 
   it('leaves the persisted vault intact — auto-lock is not a wipe', async () => {
@@ -221,7 +221,7 @@ describe('AutoLock.onIdleStateChanged (BUS-50)', () => {
     await keyring.unlock(PASSWORD);
 
     await autoLock.onIdleStateChanged('locked');
-    await expect(keyring.sign({ payload: 'x' })).rejects.toThrow('locked');
+    await expect(keyring.sign(SIGN_REQUEST)).rejects.toThrow('locked');
   });
 
   it("leaves an unlocked wallet unlocked on 'idle' — that is the alarm's job", async () => {
@@ -278,7 +278,10 @@ describe('unlock and lock (BUS-18)', () => {
     });
 
     expect(response).toMatchObject({ ok: true });
-    await expect(keyring.sign({ payload: 'x' })).rejects.toThrow('Epic 3'); // reached the signer
+    // Reached the real signer (BUS-51): a 64-byte secp256k1 signature, base64.
+    await expect(keyring.sign(SIGN_REQUEST)).resolves.toMatchObject({
+      signature: { signature: expect.stringMatching(/^[A-Za-z0-9+/]{86}==$/u) },
+    });
   });
 
   it('unlock with a wrong password leaves the wallet locked, with a generic error', async () => {
@@ -297,27 +300,22 @@ describe('unlock and lock (BUS-18)', () => {
     await handleKeyringRequest(services(keyring), { type: 'lock' });
 
     expect((await keyring.getState()).status).toBe('locked');
-    await expect(keyring.sign({ payload: 'x' })).rejects.toThrow('locked');
+    await expect(keyring.sign(SIGN_REQUEST)).rejects.toThrow('locked');
   });
 
   it('rejects sign while locked and after auto-lock, but not while unlocked', async () => {
     const { keyring, autoLock } = await setUpWallet();
 
-    expect(await handleKeyringRequest(services(keyring), { type: 'sign', request: {} })).toEqual({
-      ok: false,
-      error: 'locked',
-    });
+    await expect(keyring.sign(SIGN_REQUEST)).rejects.toThrow('locked');
+    await expect(keyring.getPublicKey()).rejects.toThrow('locked');
 
     await keyring.unlock(PASSWORD);
-    const unlocked = await handleKeyringRequest(services(keyring), { type: 'sign', request: {} });
-    // Reaches the signer — real signing is Epic 3, so it reports that instead of 'locked'.
-    expect(unlocked).toEqual({ ok: false, error: 'signing not implemented yet (Epic 3)' });
+    await expect(keyring.sign(SIGN_REQUEST)).resolves.toHaveProperty('signature');
+    await expect(keyring.getPublicKey()).resolves.toHaveLength(33);
 
     await autoLock.onAlarm(AUTO_LOCK_ALARM);
-    expect(await handleKeyringRequest(services(keyring), { type: 'sign', request: {} })).toEqual({
-      ok: false,
-      error: 'locked',
-    });
+    await expect(keyring.sign(SIGN_REQUEST)).rejects.toThrow('locked');
+    await expect(keyring.getPublicKey()).rejects.toThrow('locked');
   });
 
   it('keeps account metadata visible while locked, so the unlock screen has a label', async () => {

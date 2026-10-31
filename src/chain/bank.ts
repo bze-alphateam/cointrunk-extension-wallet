@@ -17,7 +17,6 @@
 
 import type { Balance, BalanceService } from './balance';
 import { ChainClient } from './client';
-import { ACTIVE_TOKEN, type ActiveToken } from './token';
 
 /** The bank module's REST route for an account's balances across all denoms. */
 const BALANCES_PATH = '/cosmos/bank/v1beta1/balances/';
@@ -29,10 +28,7 @@ const BALANCES_PATH = '/cosmos/bank/v1beta1/balances/';
  * must never render a number it could not actually parse.
  */
 export class BankBalanceService implements BalanceService {
-  constructor(
-    private readonly client: ChainClient,
-    private readonly activeToken: ActiveToken = ACTIVE_TOKEN,
-  ) {}
+  constructor(private readonly client: ChainClient) {}
 
   /**
    * All of the account's balances, walking the response pagination so the
@@ -57,14 +53,14 @@ export class BankBalanceService implements BalanceService {
   }
 
   /**
-   * The active token's balance for the popup home screen (Epic 3). Missing
-   * from the result set — empty account, or none of this token — is a plain
-   * zero balance, not an error.
+   * One denom's balance — the active token's, for the home and send screens
+   * (BUS-51). Missing from the result set (empty account, or none of this
+   * token) is a plain zero balance, not an error.
    */
-  async getBalance(address: string): Promise<Balance> {
+  async getBalance(address: string, denom: string): Promise<Balance> {
     const balances = await this.getAllBalances(address);
-    const active = balances.find((balance) => balance.denom === this.activeToken.baseDenom);
-    return active ?? { denom: this.activeToken.baseDenom, amount: '0' };
+    const held = balances.find((balance) => balance.denom === denom);
+    return held ?? { denom, amount: '0' };
   }
 }
 
