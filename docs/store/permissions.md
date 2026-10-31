@@ -50,9 +50,11 @@ in `src/keyring/settings.ts`.
 ## Host permissions
 
 None requested. The wallet reads public BeeZee chain data (balances, token
-metadata and branding) and broadcasts signed transactions over the public BeeZee
-node APIs (`rest.getbze.com`, `rpc.getbze.com` and their `-1`/`-2` fallbacks,
-listed in `src/chain/client.ts`). Those nodes answer with
+metadata and branding), simulates sends for their fee and broadcasts signed
+transactions over the public BeeZee REST API (`rest.getbze.com` and its
+`rest-1`/`rest-2` fallbacks, listed in `src/chain/client.ts`; the client also
+lists `rpc.getbze.com` and its fallbacks, but no feature calls them yet). Those
+nodes answer with
 `Access-Control-Allow-Origin: *`, so the requests need no host access, and the
 extension never reads or modifies web pages.
 
