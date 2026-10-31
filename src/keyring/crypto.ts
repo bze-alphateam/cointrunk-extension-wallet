@@ -4,7 +4,7 @@
  * The keyring never does crypto itself — it holds an injected {@link VaultCrypto}
  * and calls {@link VaultCrypto.decrypt} to turn the persisted {@link EncryptedVault}
  * plus the user password into an in-memory {@link Signer}. This keeps the state
- * container testable; the concrete Argon2id + AES-256-GCM implementation lives
+ * container testable; the concrete PBKDF2 + AES-256-GCM implementation lives
  * in `./vault-crypto` (`webCryptoVaultCrypto`) and is injected without the
  * keyring knowing any crypto details.
  */
