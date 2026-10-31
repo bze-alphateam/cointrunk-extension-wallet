@@ -4,7 +4,7 @@
  * exhausting the list is a user-readable failure.
  */
 
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   ChainClient,
   ChainOutcomeUnknownError,
@@ -191,5 +191,27 @@ describe('ChainClient POST + broadcast (BUS-51)', () => {
     const client = new ChainClient({ endpoints: ENDPOINTS, fetchFn });
 
     await expect(client.broadcastRest('/txs', {})).rejects.toBeInstanceOf(ChainUnavailableError);
+  });
+});
+
+describe('ChainClient default fetch', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('calls the global fetch unbound, as browsers require', async () => {
+    // Browsers throw "Illegal invocation" when native fetch runs with any
+    // `this` other than the global scope; this stub does the same.
+    const stub = vi.fn(function (this: unknown) {
+      if (this !== undefined && this !== globalThis) {
+        return Promise.reject(new TypeError('Illegal invocation'));
+      }
+      return Promise.resolve(json({ height: '7' }));
+    });
+    vi.stubGlobal('fetch', stub);
+    const client = new ChainClient({ endpoints: ENDPOINTS });
+
+    await expect(client.getRest('/status')).resolves.toEqual({ height: '7' });
+    expect(stub).toHaveBeenCalledTimes(1);
   });
 });

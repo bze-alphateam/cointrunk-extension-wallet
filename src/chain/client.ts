@@ -123,7 +123,10 @@ export class ChainClient implements RestTransport {
 
   constructor(options: ChainClientOptions = {}) {
     this.endpoints = options.endpoints ?? DEFAULT_ENDPOINTS;
-    this.fetchFn = options.fetchFn ?? fetch;
+    // Wrapped, not stored bare: `this.fetchFn(...)` would call the native
+    // fetch with the client as `this`, which browsers reject ("Illegal
+    // invocation") — every endpoint would then look unreachable.
+    this.fetchFn = options.fetchFn ?? ((input, init) => fetch(input, init));
     this.timeoutMs = options.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS;
   }
 
