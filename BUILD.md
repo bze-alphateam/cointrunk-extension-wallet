@@ -98,6 +98,8 @@ uncompressed. See `scripts/package-extension.mjs`.
 | `src/popup/index.html`, `assets/index.html-*.js`, `assets/*.css` | popup UI, `src/popup/` and the modules it imports |
 | other `assets/*.js`                                              | modules shared by both entry points (`src/`)      |
 | `icons/*`                                                        | copied unchanged from `public/icons/`             |
+| `assets/*-latin-*-normal-*.woff2`                                | brand fonts, from the pinned `@fontsource/*` deps |
+| `licenses/FONTS.txt`                                             | copied unchanged from `public/licenses/`          |
 
 The build configuration is `vite.config.ts`. Source maps are not shipped.
 

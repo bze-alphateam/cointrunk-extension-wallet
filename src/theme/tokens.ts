@@ -16,9 +16,9 @@
  * one place, {@link themeToCssVars}, so the TypeScript themes and the CSS
  * fallbacks in `popup.css` cannot drift apart silently.
  *
- * This ticket defines the token *structure* and a set of predefined themes
- * (see {@link ../theme/themes}); mapping an external brand package's four
- * colours onto a full palette is a later branding ticket. The token set is a
+ * Themes are either predefined (see {@link ../theme/themes}) or generated from
+ * a token's on-chain branding package ({@link ../theme/brand-theme}, BUS-33),
+ * which maps the package's four colours onto a full palette. The token set is a
  * superset of the brand package's fields (background / text / primary /
  * secondary) plus the supporting colours the wallet chrome needs (surface,
  * border, muted, danger, and a readable on-primary colour).
@@ -53,6 +53,12 @@ export interface Palette {
 export interface Typography {
   /** The CSS `font-family` stack applied to the whole popup. */
   readonly fontFamily: string;
+  /**
+   * The slug of the bundled brand font {@link fontFamily} names, if any
+   * ({@link ../theme/fonts}). The popup registers that font's local files
+   * before painting; absent for themes that use only the system font.
+   */
+  readonly bundledFont?: string;
 }
 
 /** Mode-independent spacing scale (CSS length strings). */

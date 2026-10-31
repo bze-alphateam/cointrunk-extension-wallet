@@ -64,7 +64,9 @@ All JavaScript ships inside the extension package. The manifest declares no
 custom `content_security_policy`, so the Manifest V3 default policy applies,
 which only allows scripts from the package and blocks `eval`. The source does
 not use `eval`, `new Function`, string timers or remotely loaded scripts or
-modules, and fonts are bundled rather than fetched. Responses from the chain
+modules, and fonts are bundled rather than fetched (the six brand fonts are
+woff2 files in the package, registered from `src/popup/brandFonts.ts`; no
+remote stylesheets or font services). Responses from the chain
 APIs, including token branding, are parsed as JSON data and never executed.
 
 ## Not requested
