@@ -11,6 +11,7 @@
  */
 
 import type { Balance, BalanceService } from '../chain/balance';
+import type { BrandingReader, DenomBranding } from '../chain/branding';
 import { selectStickyActiveDenom, type ActiveTokenState } from '../chain/active-token-selection';
 import { validateRecipientAddress } from '../chain/address';
 import type { TokenIdentityReader } from '../chain/chain-data';
@@ -41,6 +42,8 @@ export interface KeyringServices {
   readonly feeEligibility: FeeEligibilityService;
   /** Token identity metadata for the switcher's list (BUS-37), via the cached data layer. */
   readonly tokens: TokenIdentityReader;
+  /** A token's on-chain branding package for the popup skin (BUS-33), cached. */
+  readonly branding: BrandingReader;
 }
 
 /**
@@ -72,6 +75,7 @@ export type KeyringRequest =
   | { readonly type: 'getActiveToken' }
   | { readonly type: 'setActiveToken'; readonly denom: string }
   | { readonly type: 'getHeldTokens' }
+  | { readonly type: 'getBranding'; readonly denom: string }
   | { readonly type: 'send'; readonly request: SendRequest }
   | { readonly type: 'checkFeeEligibility' }
   | { readonly type: 'getSettings' }
@@ -101,6 +105,8 @@ export interface KeyringResponseData {
   setActiveToken: ActiveTokenState;
   /** The account's held tokens with identities, for the switcher — see {@link HeldToken}. */
   getHeldTokens: readonly HeldToken[];
+  /** A token's validated branding package, or null (default skin). */
+  getBranding: DenomBranding | null;
   /** The broadcast result (tx hash) of a send — see {@link TxResult}. */
   send: TxResult;
   /** Re-checked fee-token eligibility for the active account (Epic 7 hook). */
@@ -165,7 +171,7 @@ async function resolveActiveDenom(
  * a well-formed reply.
  */
 export async function handleKeyringRequest(
-  { keyring, settings, balance, transactions, feeEligibility, tokens }: KeyringServices,
+  { keyring, settings, balance, transactions, feeEligibility, tokens, branding }: KeyringServices,
   request: KeyringRequest,
 ): Promise<KeyringResponse> {
   try {
@@ -228,6 +234,13 @@ export async function handleKeyringRequest(
           })),
         );
         return { ok: true, data: held };
+      }
+      case 'getBranding': {
+        // The active token's skin (BUS-33): public chain data, read through the
+        // cached layer, which already turns "no branding" and an outage with
+        // nothing cached into null. The popup turns the package into a theme.
+        assertValidActiveTokenDenom(request.denom);
+        return { ok: true, data: await branding.getBranding(request.denom) };
       }
       case 'send': {
         // Same trust boundary as getBalance: the background owns the sending

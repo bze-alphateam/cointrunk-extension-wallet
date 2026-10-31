@@ -4,6 +4,7 @@
  */
 
 import type { Balance, BalanceService } from '../../src/chain/balance';
+import type { BrandingReader, DenomBranding } from '../../src/chain/branding';
 import type { TokenIdentityReader } from '../../src/chain/chain-data';
 import type { FeeEligibilityService, FeeTokenEligibility } from '../../src/chain/fees';
 import type { TokenIdentity } from '../../src/chain/metadata';
@@ -127,7 +128,26 @@ export class FakeTokenIdentityReader implements TokenIdentityReader {
   };
 }
 
-/** Bundle a keyring with fresh settings, balance, transaction, fee and token doubles. */
+/**
+ * `BrandingReader` double serving a per-denom map (missing → `null`, no
+ * branding), or rejecting with a fixed error. Records the denoms it was asked
+ * about.
+ */
+export class FakeBrandingReader implements BrandingReader {
+  queriedDenoms: string[] = [];
+
+  constructor(private readonly byDenom: Record<string, DenomBranding> | Error = {}) {}
+
+  getBranding = async (denom: string): Promise<DenomBranding | null> => {
+    this.queriedDenoms.push(denom);
+    if (this.byDenom instanceof Error) {
+      throw this.byDenom;
+    }
+    return this.byDenom[denom] ?? null;
+  };
+}
+
+/** Bundle a keyring with fresh settings, balance, transaction, fee, token and branding doubles. */
 export function services(
   keyring: Keyring,
   settings = new MemorySettingsStore(),
@@ -135,6 +155,7 @@ export function services(
   transactions = new FakeTransactionService(),
   feeEligibility = new FakeFeeEligibilityService(),
   tokens = new FakeTokenIdentityReader(),
+  branding = new FakeBrandingReader(),
 ): KeyringServices {
-  return { keyring, settings, balance, transactions, feeEligibility, tokens };
+  return { keyring, settings, balance, transactions, feeEligibility, tokens, branding };
 }

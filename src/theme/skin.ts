@@ -22,8 +22,9 @@
  *
  * This module is the fallback end of that decision. It is pure — a theme lookup
  * plus an object — and holds no chain or DOM dependency (the identity is passed
- * in); fetching identity and branding, deciding, and applying the resolved skin
- * to the live UI are separate tickets (BUS-32/33).
+ * in); fetching branding and deciding (BUS-32) and building and applying the
+ * brand theme ({@link ./active-skin.resolveActiveTheme}, BUS-33) live
+ * elsewhere.
  */
 
 import type { TokenIdentity } from '../chain/metadata';

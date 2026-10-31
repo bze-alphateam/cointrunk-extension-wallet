@@ -2,17 +2,18 @@
  * The predefined themes shipped with the wallet, and lookup by id (BUS-29).
  *
  * `default` is the neutral skin the wallet falls back to whenever a token has
- * no valid on-chain branding — it must always exist and is
+ * no valid (or no readable) on-chain branding — it must always exist and is
  * what {@link getTheme} returns for an unknown id (an invalid selection can
- * never leave the UI unstyled). `bze` and `midnight` are concrete examples of
- * the token structure carrying a real brand's light+dark palettes; the later
- * branding ticket will generate themes like these from on-chain branding packages
- * rather than hand-writing them.
+ * never leave the UI unstyled). `bze` is the native BZE brand skin and stays
+ * hand-written: BZE is the native coin, with no on-chain branding package to
+ * depend on. `midnight` is a further example of the token structure. Every
+ * other token's brand theme is generated at runtime from its on-chain branding
+ * package ({@link ./brand-theme.brandTheme}, BUS-33) rather than listed here.
  *
  * Typography, spacing and radii are shared across these predefined themes and
  * match the values `popup.css` was built with, so selecting any of them changes
- * only colour, not layout. (Per-brand fonts arrive with font bundling, a
- * separate open item in the Technical Design.)
+ * only colour, not layout. Generated brand themes reuse the same spacing and
+ * radii and may swap in one of the bundled brand fonts ({@link ./fonts}).
  */
 
 import type { Radii, Spacing, Theme, Typography } from './tokens';
@@ -23,7 +24,8 @@ export const DEFAULT_THEME_ID = 'default';
 /** The id of the native BZE brand theme — the skin for the BZE active token. */
 export const BZE_THEME_ID = 'bze';
 
-const SYSTEM_FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
+/** The system font stack: the default theme's font and every brand font's fallback. */
+export const SYSTEM_FONT = "system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif";
 
 // Shared non-colour scales — the layout the popup stylesheet was authored
 // against, so swapping palettes never shifts spacing or corners.

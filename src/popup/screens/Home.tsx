@@ -134,7 +134,7 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
     try {
       const active = await request({ type: 'setActiveToken', denom });
       setActiveDenom(active.denom);
-      applyActiveSkin(active.denom);
+      void applyActiveSkin(active.denom);
       setFeeWarningDismissed(false);
       await refreshFeeWarning();
     } catch {

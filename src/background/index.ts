@@ -40,7 +40,8 @@ const chainClient = new ChainClient();
 const balance = new BankBalanceService(chainClient);
 // The cached chain-read layer (BUS-28): token metadata, LP depth and the
 // governance threshold, each with its own TTL and a stale-but-usable fallback.
-// Shared by the fee-eligibility gate (and the token switcher's identities).
+// Shared by the fee-eligibility gate, the token switcher's identities and the
+// popup's branded skin (BUS-33).
 const chainData = CachedChainData.fromClient(chainClient);
 // Likewise a placeholder for signing & broadcasting a send (BUS-22): it rejects
 // until Epic 4 wires the RPC client, so the send flow exercises its failure
@@ -60,7 +61,15 @@ const feeEligibility = new LiquidityFeeEligibilityService(chainData);
 // and lock disarms it without either code path knowing the auto-lock exists.
 chrome.runtime.onMessage.addListener((message: KeyringRequest, _sender, sendResponse) => {
   handleKeyringRequest(
-    { keyring, settings, balance, transactions, feeEligibility, tokens: chainData },
+    {
+      keyring,
+      settings,
+      balance,
+      transactions,
+      feeEligibility,
+      tokens: chainData,
+      branding: chainData,
+    },
     message,
   )
     .then(async (response) => {
