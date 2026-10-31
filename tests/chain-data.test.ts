@@ -178,6 +178,7 @@ describe('CachedChainData (BUS-28)', () => {
         metadata: { getTokenIdentity },
         liquidity: { getNativeDepth, getThreshold },
         branding: { getBranding: async () => null },
+        reserves: { getNativeReserves: async () => null },
       },
       { now: clock.now },
     );
