@@ -1,12 +1,12 @@
 /**
- * The sticky active-token selection rule (BUS-34): stored wins, else the first
+ * The sticky active-token selection rule: stored wins, else the first
  * held denom, else none.
  */
 
 import { describe, expect, it } from 'vitest';
 import { selectStickyActiveDenom } from '../src/chain/active-token-selection';
 
-describe('selectStickyActiveDenom (BUS-34)', () => {
+describe('selectStickyActiveDenom', () => {
   it('keeps the stored denom — it is sticky, whatever is held now', () => {
     expect(selectStickyActiveDenom('ubze', ['factory/bze1abc/xyz'])).toBe('ubze');
     // Sticky even once that balance is gone from the held set.

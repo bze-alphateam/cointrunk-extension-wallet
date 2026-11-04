@@ -1,5 +1,5 @@
 /**
- * The branded/default decision for a token (BUS-32).
+ * The branded/default decision for a token.
  *
  * Branding comes only from the chain: any token whose denom carries a valid
  * on-chain branding package (see {@link ../chain/branding}) is branded, and
@@ -8,8 +8,8 @@
  *
  * Pure on purpose: the caller fetches the branding (cached, via
  * {@link ../chain/chain-data.CachedChainData.getBranding}) and passes it in.
- * Turning the package into a wallet {@link ./tokens.Theme} and painting it is
- * BUS-33.
+ * Turning the package into a wallet {@link ./tokens.Theme} and painting it
+ * happens in {@link ./active-skin} and {@link ./brand-theme}.
  */
 
 import type { DenomBranding } from '../chain/branding';

@@ -1,5 +1,5 @@
 /**
- * BankBalanceService (BUS-25): all denoms in one call path (with pagination),
+ * BankBalanceService: all denoms in one call path (with pagination),
  * the active token picked out for the popup, and empty/zero balances treated
  * as zero rather than errors.
  */
@@ -31,7 +31,7 @@ const page = (balances: unknown[], nextKey: string | null = null): unknown => ({
   pagination: { next_key: nextKey, total: String(balances.length) },
 });
 
-describe('BankBalanceService (BUS-25)', () => {
+describe('BankBalanceService', () => {
   it('returns every denom from one call path', async () => {
     const { client, paths } = clientFor([
       page([
@@ -75,7 +75,7 @@ describe('BankBalanceService (BUS-25)', () => {
     });
   });
 
-  it('picks out a non-native active token by denom (BUS-51)', async () => {
+  it('picks out a non-native active token by denom', async () => {
     const { client } = clientFor([
       page([
         { denom: 'factory/bze1abc/utok', amount: '7' },

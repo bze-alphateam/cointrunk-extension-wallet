@@ -1,5 +1,5 @@
 /**
- * Unlock / lock and auto-lock on inactivity (BUS-18).
+ * Unlock / lock and auto-lock on inactivity.
  *
  * The alarm scheduler is faked so the suite can assert on *what was scheduled*
  * and fire the alarm on demand — a real 15-minute wait is untestable, and
@@ -73,7 +73,7 @@ async function setUpWallet(settings = new MemorySettingsStore()) {
 
 // --- Settings ---------------------------------------------------------------
 
-describe('auto-lock settings (BUS-18)', () => {
+describe('auto-lock settings', () => {
   it('defaults to 15 minutes', () => {
     expect(DEFAULT_AUTO_LOCK_MINUTES).toBe(15);
     expect(withDefaults(undefined).autoLockMinutes).toBe(15);
@@ -104,7 +104,7 @@ describe('auto-lock settings (BUS-18)', () => {
 
 // --- Arming / disarming the alarm -------------------------------------------
 
-describe('AutoLock.sync (BUS-18)', () => {
+describe('AutoLock.sync', () => {
   it('arms the alarm at the configured timeout once unlocked', async () => {
     const { keyring, autoLock, alarms } = await setUpWallet();
     await keyring.unlock(PASSWORD);
@@ -166,7 +166,7 @@ describe('AutoLock.sync (BUS-18)', () => {
 
 // --- The alarm firing -------------------------------------------------------
 
-describe('AutoLock.onAlarm (BUS-18)', () => {
+describe('AutoLock.onAlarm', () => {
   it('locks the wallet when the auto-lock alarm fires', async () => {
     const { keyring, autoLock } = await setUpWallet();
     await keyring.unlock(PASSWORD);
@@ -204,9 +204,9 @@ describe('AutoLock.onAlarm (BUS-18)', () => {
   });
 });
 
-// --- OS screen lock / sleep (BUS-50) ----------------------------------------
+// --- OS screen lock / sleep ----------------------------------------
 
-describe('AutoLock.onIdleStateChanged (BUS-50)', () => {
+describe('AutoLock.onIdleStateChanged', () => {
   it("locks an unlocked wallet when the OS screen locks ('locked')", async () => {
     const { keyring, autoLock } = await setUpWallet();
     await keyring.unlock(PASSWORD);
@@ -268,7 +268,7 @@ describe('AutoLock.onIdleStateChanged (BUS-50)', () => {
 
 // --- Unlock / lock over the message API -------------------------------------
 
-describe('unlock and lock (BUS-18)', () => {
+describe('unlock and lock', () => {
   it('unlock with the correct password makes the account usable', async () => {
     const { keyring } = await setUpWallet();
 
@@ -278,7 +278,7 @@ describe('unlock and lock (BUS-18)', () => {
     });
 
     expect(response).toMatchObject({ ok: true });
-    // Reached the real signer (BUS-51): a 64-byte secp256k1 signature, base64.
+    // Reached the real signer: a 64-byte secp256k1 signature, base64.
     await expect(keyring.sign(SIGN_REQUEST)).resolves.toMatchObject({
       signature: { signature: expect.stringMatching(/^[A-Za-z0-9+/]{86}==$/u) },
     });
@@ -329,7 +329,7 @@ describe('unlock and lock (BUS-18)', () => {
 
 // --- Settings over the message API ------------------------------------------
 
-describe('settings over the message API (BUS-18)', () => {
+describe('settings over the message API', () => {
   it('reports the default timeout before anything is configured', async () => {
     const { keyring, settings } = await setUpWallet();
 
@@ -374,7 +374,7 @@ describe('settings over the message API (BUS-18)', () => {
 
 // --- Token-switching toggle over the message API ----------------------------
 
-describe('token-switching toggle over the message API (BUS-36)', () => {
+describe('token-switching toggle over the message API', () => {
   it('is off by default', async () => {
     const { keyring, settings } = await setUpWallet();
 

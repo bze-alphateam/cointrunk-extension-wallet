@@ -1,9 +1,9 @@
 /**
- * Send screen (BUS-22): enter recipient + amount of the active token, review
+ * Send screen: enter recipient + amount of the active token, review
  * with the real fee, then confirm to sign & broadcast.
  *
  * The screen holds no key material and does no signing. Review asks the
- * background for a `quoteSend` (simulated gas, fee coin and amount, BUS-51);
+ * background for a `quoteSend` (simulated gas, fee coin and amount);
  * confirm sends a `send` with the fee the user saw, and the background resolves
  * the sending account and token, signs locally and broadcasts. Amounts are
  * parsed and shown with the active token's own decimals and symbol (from its
@@ -12,8 +12,8 @@
  * balance — is done here so the user gets immediate, specific feedback, and
  * re-checked in the background as the trust boundary.
  *
- * The success/failure result rendering is deliberately minimal here; BUS-23
- * enriches it with the explorer link and the fee-token re-check hook.
+ * The success/failure result rendering is deliberately minimal here; a later
+ * layer enriches it with the explorer link and the fee-token re-check hook.
  */
 
 import { useEffect, useState, type FormEvent } from 'react';
@@ -63,7 +63,7 @@ export function Send({ onClose }: SendProps) {
   const [prepared, setPrepared] = useState<PreparedSend | null>(null);
 
   const [balance, setBalance] = useState<ActiveBalance | null>(null);
-  // Set when the quote said the active token can't pay the fee (BUS-51).
+  // Set when the quote said the active token can't pay the fee.
   const [feeBlocked, setFeeBlocked] = useState<string | null>(null);
   const [balanceError, setBalanceError] = useState<string | null>(null);
 
@@ -72,7 +72,7 @@ export function Send({ onClose }: SendProps) {
 
   const hashCopy = useClipboardCopy();
 
-  // The failure-path hook for Epic 7: re-check whether the account can pay fees.
+  // The failure-path hook: re-check whether the account can pay fees.
   const [feeCheck, setFeeCheck] = useState<string | null>(null);
   const [feeChecking, setFeeChecking] = useState(false);
 
@@ -163,7 +163,7 @@ export function Send({ onClose }: SendProps) {
       setResult(res);
     } catch (cause) {
       setSendError(cause instanceof Error ? cause.message : 'The transaction could not be sent.');
-      // BUS-40: a send can fail because the active token is too low-liquidity to
+      // A send can fail because the active token is too low-liquidity to
       // be an accepted fee token, so re-check eligibility automatically the moment
       // it fails — the result shows below without the user having to ask.
       void recheckFeeEligibility();
@@ -173,7 +173,7 @@ export function Send({ onClose }: SendProps) {
   }
 
   /**
-   * Re-check whether the active token can pay fees (BUS-38/40). Runs
+   * Re-check whether the active token can pay fees. Runs
    * automatically when a send fails, and again if the user taps the manual
    * retry. Purely informational — it explains a likely cause, it doesn't retry
    * the send.
@@ -298,7 +298,7 @@ export function Send({ onClose }: SendProps) {
             <p className="result__title result__title--error">Transaction failed</p>
             <p className="form__error">{sendError}</p>
 
-            {/* BUS-40: the fee-token re-check runs automatically on failure (a
+            {/* The fee-token re-check runs automatically on failure (a
                 common cause is a too-low-liquidity fee token); this button just
                 re-runs it on demand. */}
             <button

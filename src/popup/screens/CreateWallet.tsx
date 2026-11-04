@@ -1,5 +1,5 @@
 /**
- * First-run create-wallet flow (BUS-15): choose a password → back up the
+ * First-run create-wallet flow: choose a password → back up the
  * generated recovery phrase → done.
  *
  * The mnemonic is held in this component's state only between those two steps

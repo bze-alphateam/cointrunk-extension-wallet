@@ -1,5 +1,5 @@
 /**
- * The brand fonts a token's on-chain branding can pick (BUS-33).
+ * The brand fonts a token's on-chain branding can pick.
  *
  * Exactly the six fonts the BZE dapps' brand-kit editor offers (its
  * `BRANDING_FONTS` list), keyed by the slug the chain stores in

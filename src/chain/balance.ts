@@ -1,5 +1,5 @@
 /**
- * The active token's balance and the seam that fetches it (BUS-19).
+ * The active token's balance and the seam that fetches it.
  *
  * A balance is public, non-secret chain data, so — unlike key material — it does
  * not belong to the keyring. It rides the same popup ↔ background message channel
@@ -7,7 +7,7 @@
  * resolves the active account and delegates to a {@link BalanceService}.
  *
  * This module defines the contract; the chain-backed implementation is
- * {@link ../chain/bank.BankBalanceService} (BUS-25), which replaced the
+ * {@link ../chain/bank.BankBalanceService}, which replaced the
  * placeholder this module shipped with while the path was UI-only.
  */
 
@@ -27,7 +27,7 @@ export interface BalanceService {
   getBalance(address: string, denom: string): Promise<Balance>;
   /**
    * Every denom the address holds a positive balance of, in bank order. Used to
-   * pick the sticky active token (BUS-34); the bank module omits zero balances,
+   * pick the sticky active token; the bank module omits zero balances,
    * so this is exactly "the tokens the account has received and still holds".
    */
   getAllBalances(address: string): Promise<Balance[]>;

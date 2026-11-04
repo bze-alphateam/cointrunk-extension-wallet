@@ -1,5 +1,5 @@
 /**
- * `getBalance` routing (BUS-19): the popup asks for its balance, the background
+ * `getBalance` routing: the popup asks for its balance, the background
  * resolves the active account itself and delegates to the `BalanceService`. The
  * popup never names an address, so it cannot query an arbitrary one.
  */
@@ -37,7 +37,7 @@ async function keyringWithAccount(): Promise<{ keyring: Keyring; address: string
   return { keyring, address: account!.address };
 }
 
-describe('getBalance request (BUS-19)', () => {
+describe('getBalance request', () => {
   it('returns the service balance, queried for the active account address', async () => {
     const { keyring, address } = await keyringWithAccount();
     const balance = new FakeBalanceService({ denom: 'ubze', amount: '1234567' });
@@ -59,7 +59,7 @@ describe('getBalance request (BUS-19)', () => {
     expect(balance.queriedDenom).toBe('ubze');
   });
 
-  it("returns the active token's balance with its own decimals and symbol (BUS-51)", async () => {
+  it("returns the active token's balance with its own decimals and symbol", async () => {
     const { keyring } = await keyringWithAccount();
     const denom = 'factory/bze1abc/uvdl';
     const settings = new MemorySettingsStore();

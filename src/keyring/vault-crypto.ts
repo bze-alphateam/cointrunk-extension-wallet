@@ -1,8 +1,8 @@
 /**
- * Encryption at rest for the vault (BUS-17): the concrete {@link VaultCrypto}
+ * Encryption at rest for the vault: the concrete {@link VaultCrypto}
  * that turns a BIP39 mnemonic into the persisted {@link EncryptedVault} and back.
  *
- * Scheme (ratified in {@link ./vault} and the Security Model doc):
+ * Scheme (ratified in {@link ./vault}):
  *  - PBKDF2-HMAC-SHA256 stretches the user password into a 256-bit AES key,
  *    entirely on native WebCrypto (`SubtleCrypto`) — no third-party crypto lib
  *    and no WASM, so derivation is fast enough for the unlock-latency budget.
@@ -154,7 +154,7 @@ export async function encryptVault(
  * Refuse a vault this build cannot read. The blob is versioned and
  * self-describing precisely so a future format can change the scheme; reading a
  * newer or foreign blob as if it were v1 would run the wrong KDF/cipher and then
- * misreport the result as a wrong password (BUS-41 audit). The check looks only
+ * misreport the result as a wrong password. The check looks only
  * at non-secret metadata, so the error carries nothing sensitive.
  */
 function assertSupportedVault(vault: EncryptedVault): void {
@@ -201,10 +201,10 @@ export async function decryptMnemonic(vault: EncryptedVault, password: string): 
 
 /**
  * The concrete {@link VaultCrypto} the keyring is wired with (replacing the
- * BUS-49 `unavailableCrypto` stub). `encrypt` produces the persistable blob for
+ * `unavailableCrypto` stub). `encrypt` produces the persistable blob for
  * a new or imported account; `decrypt` recovers the mnemonic — which proves the
  * password via the GCM auth tag — and turns it straight into the real HD
- * signer (BUS-51). The mnemonic lives on only inside that signer, which the
+ * signer. The mnemonic lives on only inside that signer, which the
  * keyring holds in service-worker memory while unlocked.
  */
 export const webCryptoVaultCrypto: VaultCrypto = {

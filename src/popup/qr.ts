@@ -1,9 +1,9 @@
 /**
- * Turn text into a QR code, for the Receive screen (BUS-21).
+ * Turn text into a QR code, for the Receive screen.
  *
  * QR generation is delegated to `qr` (paulmillr) — a zero-dependency, pure-JS
  * encoder from the same author as the `@noble` libraries CosmJS already bundles.
- * This keeps the Security Model's "don't hand-roll spec-heavy primitives"
+ * This keeps the wallet's "don't hand-roll spec-heavy primitives"
  * posture (BIP39 / secp256k1 come from a library, not us): Reed–Solomon error
  * correction and the QR bit layout are exactly that kind of code.
  *
@@ -17,7 +17,7 @@ import encodeQR from 'qr';
 /**
  * QR quiet zone in modules. ISO/IEC 18004 §9.1 requires a 4-module light margin
  * on all four sides for reliable scanning; the library defaults to a compact 2,
- * so we ask for the standards-conformant 4 (BUS-21 AC: "QR scans correctly").
+ * so we ask for the standards-conformant 4 so the QR scans correctly.
  */
 export const QR_QUIET_ZONE = 4;
 

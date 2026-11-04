@@ -1,7 +1,7 @@
 /**
  * Persistence layer for the encrypted vault, over `chrome.storage.local`.
  *
- * SECURITY INVARIANT (BUS-48 Security Model): only the encrypted blob and
+ * SECURITY INVARIANT: only the encrypted blob and
  * non-secret metadata are ever written to disk — never a plaintext mnemonic or
  * private key. {@link ChromeVaultStore.save} enforces this by reconstructing the
  * persisted object field by field from a whitelist, so even if a caller hands it

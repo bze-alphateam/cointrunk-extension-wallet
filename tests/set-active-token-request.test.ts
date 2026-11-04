@@ -1,5 +1,5 @@
 /**
- * `setActiveToken` routing (BUS-35): a deliberate user switch persists the
+ * `setActiveToken` routing: a deliberate user switch persists the
  * chosen denom as the new sticky active token, so the wallet reopens on it. The
  * write goes through the same settings store as the first-received bootstrap, so
  * it survives popup reopen and lock/unlock (settings live outside the vault).
@@ -33,7 +33,7 @@ async function keyringWithAccount(): Promise<Keyring> {
   return keyring;
 }
 
-describe('setActiveToken request (BUS-35)', () => {
+describe('setActiveToken request', () => {
   it('persists the chosen denom and reports it back as the active token', async () => {
     const keyring = await keyringWithAccount();
     const settings = new MemorySettingsStore();

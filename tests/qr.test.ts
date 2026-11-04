@@ -1,5 +1,5 @@
 /**
- * QR encoding for the Receive screen (BUS-21). Covers the pure matrix/path
+ * QR encoding for the Receive screen. Covers the pure matrix/path
  * helpers; the React screen that wraps them in an `<svg>` is not unit-tested,
  * matching the repo's "test the logic, not the JSX" posture.
  */
@@ -10,7 +10,7 @@ import { QR_QUIET_ZONE, qrMatrix, qrSize, qrSvgPath } from '../src/popup/qr';
 // A representative BeeZee address is what the screen actually encodes.
 const ADDRESS = 'bze1qy352eufqy352eufqy352eufqy352eufktz2x3';
 
-describe('qrMatrix (BUS-21)', () => {
+describe('qrMatrix', () => {
   it('produces a non-empty square matrix', () => {
     const matrix = qrMatrix(ADDRESS);
 
@@ -48,7 +48,7 @@ describe('qrMatrix (BUS-21)', () => {
   });
 });
 
-describe('qrSvgPath (BUS-21)', () => {
+describe('qrSvgPath', () => {
   it('emits one 1×1 square subpath per dark module, row-major', () => {
     const matrix = [
       [true, false],
@@ -75,7 +75,7 @@ describe('qrSvgPath (BUS-21)', () => {
   });
 });
 
-describe('qrSize (BUS-21)', () => {
+describe('qrSize', () => {
   it('is the module count per side', () => {
     const matrix = qrMatrix(ADDRESS);
     expect(qrSize(matrix)).toBe(matrix.length);

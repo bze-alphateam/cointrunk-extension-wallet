@@ -1,5 +1,5 @@
 /**
- * Parsing a typed amount into base units (BUS-22): the inverse of
+ * Parsing a typed amount into base units: the inverse of
  * `formatTokenAmount`, and the one place user input becomes an on-chain amount.
  */
 
@@ -8,7 +8,7 @@ import { formatTokenAmount, parseTokenAmount } from '../src/chain/token';
 
 const DECIMALS = 6; // BZE
 
-describe('parseTokenAmount (BUS-22)', () => {
+describe('parseTokenAmount', () => {
   it('scales whole and fractional amounts to base units', () => {
     expect(parseTokenAmount('1', DECIMALS)).toBe('1000000');
     expect(parseTokenAmount('1.5', DECIMALS)).toBe('1500000');

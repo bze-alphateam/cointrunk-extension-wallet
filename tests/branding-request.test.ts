@@ -1,5 +1,5 @@
 /**
- * `getBranding` routing (BUS-33): the popup has no chain client, so it asks the
+ * `getBranding` routing: the popup has no chain client, so it asks the
  * background for a token's branding package, which reads it through the cached
  * chain layer. "No branding" comes back as null; a missing denom is rejected.
  */
@@ -37,7 +37,7 @@ function withBranding(branding: FakeBrandingReader) {
   return services(keyring, undefined, undefined, undefined, undefined, undefined, branding);
 }
 
-describe('getBranding request (BUS-33)', () => {
+describe('getBranding request', () => {
   it("returns the denom's branding package", async () => {
     const branding = new FakeBrandingReader({ [TOKEN]: BRANDING });
     const response = await handleKeyringRequest(withBranding(branding), {

@@ -1,5 +1,5 @@
 /**
- * `copyText` (BUS-20): the address copy helper. Tests exercise the primary
+ * `copyText`: the address copy helper. Tests exercise the primary
  * Clipboard API path, the fall-through to `execCommand` when the API is missing
  * or rejects, and the "nothing worked" error — the popup relies on that error to
  * decide whether to show the "Copied" confirmation.
@@ -32,7 +32,7 @@ function stubDocument(execResult: boolean) {
   return { textarea, execCommand };
 }
 
-describe('copyText (BUS-20)', () => {
+describe('copyText', () => {
   it('writes through the async Clipboard API when available', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     vi.stubGlobal('navigator', { clipboard: { writeText } });

@@ -1,10 +1,10 @@
 /**
  * A small TTL cache for chain reads, with single-flight and a
- * stale-but-usable fallback (BUS-28).
+ * stale-but-usable fallback.
  *
  * The popup reopens constantly, and every chain read is a network round trip;
  * caching within a TTL means a reopen inside the window is answered from memory
- * with no request at all (the ticket's "popup isn't querying on every open").
+ * with no request at all (the popup must not query on every open).
  *
  * Semantics, per key:
  *  - **Fresh** (age < TTL): the stored value is returned synchronously, no fetch.

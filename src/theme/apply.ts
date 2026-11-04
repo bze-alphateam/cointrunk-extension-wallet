@@ -1,6 +1,5 @@
 /**
- * Applying a theme to the live UI, and picking the holder's colour mode
- * (BUS-29).
+ * Applying a theme to the live UI, and picking the holder's colour mode.
  *
  * "Apply" means writing the theme's CSS custom properties onto a target style
  * declaration — the root element's, in the popup — after which every
@@ -55,7 +54,7 @@ export function applyTheme(
 /**
  * The holder's preferred colour mode from the OS/browser setting, defaulting to
  * `light` when it can't be read. Dark/light is holder-controlled; a later
- * ticket can layer a manual override on top of this.
+ * change can layer a manual override on top of this.
  */
 export function preferredMode(): ThemeMode {
   if (typeof matchMedia === 'function' && matchMedia('(prefers-color-scheme: dark)').matches) {

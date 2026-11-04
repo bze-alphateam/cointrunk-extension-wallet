@@ -1,34 +1,34 @@
 /**
  * Encrypted-vault schema and ratified crypto parameters for CoinTrunk key
- * storage. This is the single source of truth that the key-management tickets
- * consume instead of re-deciding (BUS-48).
+ * storage. This is the single source of truth that the key-management code
+ * consumes instead of re-deciding.
  *
- * The types mirror the "Stored blob shape" in the Security Model doc; the
+ * The types define the stored blob shape; the
  * parameter constants are the ratified PBKDF2 / AES-256-GCM values.
  *
- * Secret-handling invariants every consumer MUST uphold (see the Security Model
- * page on Confluence for the authoritative list):
+ * Secret-handling invariants every consumer MUST uphold (also
+ * summarised in `docs/store/security.md`):
  *  1. Only ciphertext is persisted — never a plaintext mnemonic or private key.
  *  2. Decrypted secrets live only in the background service-worker memory, only
  *     while unlocked; cleared on lock, auto-lock, and service-worker teardown.
  *  3. Secrets never cross into the page or content-script context, and are
  *     never logged, put in error messages, or placed in URLs. The popup receives
  *     secret material exactly once — the new mnemonic in the `createAccount`
- *     reply, for the backup screen (the Security Model's bounded exception).
+ *     reply, for the backup screen (the one bounded exception).
  *  4. A correct password is proven by a successful AES-GCM decrypt (auth-tag
  *     check) — no separate password hash is ever stored.
  *
- * Scope (BUS-48): schema types + parameters only. The encrypt/decrypt routine
- * (BUS-17), keyring + storage layer (BUS-49), and generation/import
- * (BUS-15/16) live in their own tickets and import from here.
+ * Scope: schema types + parameters only. The encrypt/decrypt routine,
+ * keyring + storage layer, and generation/import
+ * live in their own modules and import from here.
  */
 
 /** Current on-disk vault schema version. Bump when the blob shape changes. */
 export const VAULT_VERSION = 1;
 
 /**
- * Ratified PBKDF2 parameters (BUS-48, revised after the Keplr/MetaMask prior-art
- * spike — see the Security Model "Prior-art review"). Runs on native WebCrypto
+ * Ratified PBKDF2 parameters (revised after reviewing Keplr/MetaMask prior
+ * art). Runs on native WebCrypto
  * (`SubtleCrypto.deriveKey`), so key derivation is effectively instant and meets
  * the ≲ 1 s unlock budget, unlike the pure-JS Argon2id it replaces. 600k
  * iterations is the OWASP 2023 baseline for PBKDF2-HMAC-SHA256; it matches the
@@ -48,7 +48,7 @@ export const PBKDF2_PARAMS = {
 } as const;
 
 /**
- * Ratified AES-256-GCM parameters (BUS-48). Native WebCrypto (`SubtleCrypto`):
+ * Ratified AES-256-GCM parameters. Native WebCrypto (`SubtleCrypto`):
  * a fresh random IV per encryption and a 128-bit authentication tag.
  */
 export const AES_GCM_PARAMS = {

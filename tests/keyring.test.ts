@@ -47,7 +47,7 @@ const fakeEncrypt: VaultCrypto['encrypt'] = async (_mnemonic, _password, account
   accounts: [...accounts],
 });
 
-/** Crypto that always "decrypts" — stands in for BUS-17 with a correct password. */
+/** Crypto that always "decrypts" — stands in for real crypto with a correct password. */
 const okCrypto: VaultCrypto = { encrypt: fakeEncrypt, decrypt: async () => fakeSigner };
 
 /** Crypto that rejects — stands in for a wrong password / tampered blob. */
@@ -81,7 +81,7 @@ afterEach(() => {
   delete (globalThis as unknown as { chrome?: unknown }).chrome;
 });
 
-// --- Storage layer: no plaintext ever written (AC2) -------------------------
+// --- Storage layer: no plaintext ever written -------------------------------
 
 describe('ChromeVaultStore', () => {
   it('persists only the whitelisted vault fields — never attached secrets', async () => {
@@ -138,7 +138,7 @@ describe('ChromeVaultStore', () => {
   });
 });
 
-// --- Keyring state machine (AC1) --------------------------------------------
+// --- Keyring state machine --------------------------------------------------
 
 describe('Keyring state machine', () => {
   it('is uninitialized when no vault exists', async () => {
@@ -200,7 +200,7 @@ describe('Keyring state machine', () => {
   });
 });
 
-// --- MV3 teardown: secrets die, metadata survives, wallet relocks (AC4) ------
+// --- MV3 teardown: secrets die, metadata survives, wallet relocks ------------
 
 describe('service-worker teardown', () => {
   it('respawns locked with only ciphertext + metadata persisted', async () => {
@@ -231,7 +231,7 @@ describe('service-worker teardown', () => {
   });
 });
 
-// --- Typed message API (AC3) ------------------------------------------------
+// --- Typed message API ------------------------------------------------------
 
 describe('handleKeyringRequest', () => {
   it('answers getState', async () => {
@@ -272,7 +272,7 @@ describe('handleKeyringRequest', () => {
     });
   });
 
-  it('offers the popup no raw signing request (BUS-51)', async () => {
+  it('offers the popup no raw signing request', async () => {
     // The popup can only get a send signed that the background builds itself.
     const keyring = new Keyring(new MemoryStore(VAULT), okCrypto);
     await keyring.unlock('correct horse');

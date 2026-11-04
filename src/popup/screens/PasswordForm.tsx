@@ -1,18 +1,18 @@
 /**
- * Password step shared by every wallet-setup path (BUS-15 create, BUS-16
+ * Password step shared by every wallet-setup path (create and
  * import). Collects and confirms the password that encrypts the vault.
  *
  * The password lives only in this component's state for the length of the
  * submit; it is handed to the background and never persisted or logged
- * (Security Model: "the password is held only transiently").
+ * (the password is held only transiently).
  */
 
 import { useState, type FormEvent } from 'react';
 
 /**
  * Minimum password length. The vault's real defence is the 600k-iteration
- * PBKDF2 (BUS-17); this floor plus the hint below is the UI-side
- * password-strength guidance the Security Model calls for.
+ * PBKDF2; this floor plus the hint below is the UI-side
+ * password-strength guidance the security model calls for.
  */
 export const MIN_PASSWORD_LENGTH = 8;
 

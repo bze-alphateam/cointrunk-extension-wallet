@@ -1,5 +1,5 @@
 /**
- * Block-explorer links for the send success state (BUS-23).
+ * Block-explorer links for the send success state.
  *
  * Pure and DOM-free so it is unit-testable like the other chain helpers. It
  * mirrors how the public BZE web apps build `<explorer>/tx/<hash>` links

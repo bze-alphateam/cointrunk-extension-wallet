@@ -13,7 +13,7 @@ promo tile.
 
 Source: the CoinTrunk symbol, `cointrunk/Symbol/248px.png` in the
 [Official-BZEdge-Graphics](https://github.com/bze-alphateam/Official-BZEdge-Graphics)
-repo. The extension icons in `public/icons/` were placeholders until BUS-44 and
+repo. The extension icons in `public/icons/` were placeholders at first and
 are now drawn from the same symbol, so the toolbar icon and the store icon match.
 
 | File                                                | Size    | Used for                                           |
@@ -100,8 +100,7 @@ Save the finished tiles as `docs/store/assets/promo/small-440x280.png` and
 
 ## Screenshots
 
-**These are captured by Stefan, not on the build VM** (the extension is never run
-there). The shot list below says exactly what to capture.
+**These are captured by hand in a real browser profile**, not in CI. The shot list below says exactly what to capture.
 
 ### Sizes
 
@@ -137,11 +136,11 @@ The popup is 320 px wide (CSS), too small to fill 1280×800 on its own. Frame it
 - Give the demo wallet a believable balance (for example 1,250 BZE) so the
   screens are not empty.
 - **Branded token shots:** only use a token whose branding is ours to show (a
-  token Stefan created with on-chain branding, on mainnet or testnet). Showing
+  token the team created with on-chain branding, on mainnet or testnet). Showing
   another project's token in a store screenshot would suggest that project is
   involved with the wallet, which is exactly what the listing must avoid.
 - Captions describe what the screen does. No claims about security beyond what
-  BUS-41's statement says.
+  [`security.md`](security.md) says.
 
 ### Shot list
 

@@ -1,5 +1,5 @@
 /**
- * ChainClient endpoint fallback (BUS-24): unavailable endpoints (network
+ * ChainClient endpoint fallback: unavailable endpoints (network
  * error, timeout, 5xx) fall through in order; 4xx answers surface immediately;
  * exhausting the list is a user-readable failure.
  */
@@ -41,7 +41,7 @@ const ENDPOINTS = {
   rpc: ['https://rpc-a.example', 'https://rpc-b.example'],
 };
 
-describe('ChainClient (BUS-24)', () => {
+describe('ChainClient', () => {
   it('returns the primary endpoint response when it is healthy', async () => {
     const { fetchFn, urls } = fakeFetch([json({ height: '42' })]);
     const client = new ChainClient({ endpoints: ENDPOINTS, fetchFn });
@@ -130,7 +130,7 @@ describe('ChainClient (BUS-24)', () => {
   });
 });
 
-describe('ChainClient POST + broadcast (BUS-51)', () => {
+describe('ChainClient POST + broadcast', () => {
   const timeout = (): Error => Object.assign(new Error('timed out'), { name: 'TimeoutError' });
 
   it('postRest falls back like a GET (simulate is idempotent)', async () => {

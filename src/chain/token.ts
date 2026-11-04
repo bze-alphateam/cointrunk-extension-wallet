@@ -1,10 +1,9 @@
 /**
- * The wallet's active token and how to render an on-chain amount for humans
- * (BUS-19).
+ * The wallet's active token and how to render an on-chain amount for humans.
  *
  * v1 is single-token: the active token is always BeeZee's native BZE. The
  * {@link ActiveToken} shape is kept small and explicit so a later multi-token
- * epic can carry a list of these without reworking the formatter.
+ * feature can carry a list of these without reworking the formatter.
  *
  * {@link formatTokenAmount} is the one place base-unit integers become display
  * strings, and it is pure and BigInt-based on purpose: a bank balance can exceed
@@ -67,7 +66,7 @@ export function formatTokenAmount(baseAmount: string, decimals: number): string 
 /**
  * Parse a human display amount as typed on the Send screen (e.g. `"1.5"`) into a
  * base-unit integer string — the inverse of {@link formatTokenAmount} and the
- * one place user input becomes an on-chain amount (BUS-22).
+ * one place user input becomes an on-chain amount.
  *
  * Accepts a non-negative decimal with an optional fractional part of at most
  * `decimals` places, and no thousands separators, sign, or exponent. Every

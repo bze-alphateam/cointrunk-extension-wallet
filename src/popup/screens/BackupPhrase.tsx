@@ -1,5 +1,5 @@
 /**
- * One-time recovery-phrase backup screen (BUS-15).
+ * One-time recovery-phrase backup screen.
  *
  * The mnemonic reaches this component exactly once — as the direct reply to
  * `createAccount` — and there is no message that can fetch it again. Confirming

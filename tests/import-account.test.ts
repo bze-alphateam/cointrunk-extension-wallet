@@ -1,5 +1,5 @@
 /**
- * Wallet import from a user-supplied mnemonic (BUS-16), over the REAL WebCrypto
+ * Wallet import from a user-supplied mnemonic, over the REAL WebCrypto
  * vault crypto — so this covers validation → derivation → encryption →
  * persistence exactly as the background does it.
  */
@@ -45,7 +45,7 @@ function newKeyring() {
   return { store, keyring: new Keyring(store, webCryptoVaultCrypto) };
 }
 
-describe('normalizeMnemonic (BUS-16)', () => {
+describe('normalizeMnemonic', () => {
   it('collapses padding, newlines and repeated spaces from a paste', () => {
     expect(normalizeMnemonic('  legal   winner\nthank\tyear  ')).toBe('legal winner thank year');
   });
@@ -63,7 +63,7 @@ describe('normalizeMnemonic (BUS-16)', () => {
   });
 });
 
-describe('assertValidMnemonic (BUS-16)', () => {
+describe('assertValidMnemonic', () => {
   it.each(ACCEPTED_MNEMONIC_WORD_COUNTS)('accepts a valid %i-word phrase', (count) => {
     const mnemonic = count === 12 ? VALID_12 : VALID_24;
     expect(mnemonic.split(' ')).toHaveLength(count);
@@ -120,7 +120,7 @@ describe('assertValidMnemonic (BUS-16)', () => {
   });
 });
 
-describe('keyring.importAccount (BUS-16)', () => {
+describe('keyring.importAccount', () => {
   it('derives the address that belongs to the imported phrase', async () => {
     const { keyring } = newKeyring();
     const expected = await deriveAccount(VALID_24);
@@ -208,7 +208,7 @@ describe('keyring.importAccount (BUS-16)', () => {
   });
 });
 
-describe('importAccount over the message API (BUS-16)', () => {
+describe('importAccount over the message API', () => {
   it('answers with non-secret state only — no mnemonic comes back', async () => {
     const { keyring } = newKeyring();
     const response = await handleKeyringRequest(services(keyring), {

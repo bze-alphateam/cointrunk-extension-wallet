@@ -1,5 +1,5 @@
 /**
- * `quoteSend` / `send` routing (BUS-22, BUS-51): the popup asks to send to a
+ * `quoteSend` / `send` routing: the popup asks to send to a
  * recipient for an amount of the token it showed; the background resolves the
  * active account as the sender and the active token as the denom, re-validates
  * the recipient and amount, and delegates to the `TransactionService`. The
@@ -42,7 +42,7 @@ async function keyringWithAccount(): Promise<{ keyring: Keyring; address: string
 
 const SEND = { toAddress: RECIPIENT, amount: '1000000', denom: 'ubze' };
 
-describe('send request (BUS-22, BUS-51)', () => {
+describe('send request', () => {
   it('broadcasts from the active account with the confirmed fee and returns the tx hash', async () => {
     const { keyring, address } = await keyringWithAccount();
     const transactions = new FakeTransactionService({ hash: 'ABC123' });

@@ -2,14 +2,12 @@
 
 A [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/) browser-extension
 wallet for the [BeeZee (BZE)](https://getbze.com/) network. Public brand:
-**CoinTrunk** ([cointrunk.io](https://cointrunk.io)); internal codename **BusyWallet**
-(Jira project `BUS`).
+**CoinTrunk** ([cointrunk.io](https://cointrunk.io)).
 
-> **Status:** early scaffolding. This repo currently contains the project
-> skeleton (TypeScript + tooling), the Manifest V3 manifest with a background
-> service worker stub, a Vite build that produces a loadable extension, and a
-> minimal React popup. It is being built out ticket by ticket under Epic
-> **BUS-1 — Project foundation & tooling**.
+> **Status:** in development, not yet published to the browser stores. The
+> wallet creates or imports an account, keeps the encrypted vault locally, shows
+> balances and sends tokens signed on the device. See
+> [`docs/store/security.md`](docs/store/security.md) for the as-built facts.
 
 ## Project structure
 

@@ -1,6 +1,5 @@
 /**
- * Settings screen (BUS-18): the auto-lock timeout and the token-switching toggle
- * (BUS-36).
+ * Settings screen: the auto-lock timeout and the token-switching toggle.
  *
  * The auto-lock value is validated in the background (`assertValidAutoLockMinutes`)
  * and this screen renders whatever error comes back, so there is one set of bounds
@@ -54,7 +53,7 @@ export function Settings({ onClose }: SettingsProps) {
     }
   }
 
-  /** Flip the token-switching toggle and persist it immediately (BUS-36). */
+  /** Flip the token-switching toggle and persist it immediately. */
   async function toggleTokenSwitching(enabled: boolean) {
     setError(null);
     setSaved(false);

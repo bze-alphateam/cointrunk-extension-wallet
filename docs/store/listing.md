@@ -118,4 +118,4 @@ Layout and sizes are in [`graphics.md`](graphics.md#promo-tiles).
   [`privacy-declarations.md`](privacy-declarations.md).
 - Capture the screenshots and produce the promo tiles listed in
   [`graphics.md`](graphics.md).
-- Upload everything in each store dashboard (BUS-46).
+- Upload everything in each store dashboard.

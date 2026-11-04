@@ -1,5 +1,5 @@
 /**
- * TokenMetadataService (BUS-26): identity resolved from bank denom metadata
+ * TokenMetadataService: identity resolved from bank denom metadata
  * via the query-string route (the only one that accepts factory/… denoms),
  * with sensible per-field defaults when the chain has nothing.
  */
@@ -44,7 +44,7 @@ function serviceFor(
   return { service: new TokenMetadataService(client), urls };
 }
 
-describe('TokenMetadataService (BUS-26)', () => {
+describe('TokenMetadataService', () => {
   it('queries the denoms_metadata_by_query_string route with the denom URL-encoded', async () => {
     const { service, urls } = serviceFor(VDL_METADATA);
 

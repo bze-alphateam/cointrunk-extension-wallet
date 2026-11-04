@@ -1,5 +1,5 @@
 /**
- * Fee-token eligibility gate (BUS-38). The pure predicate mirrors the chain's
+ * Fee-token eligibility gate. The pure predicate mirrors the chain's
  * `HasDeepLiquidityWithNativeDenom` (`depth >= threshold`), with the native
  * token always eligible; the service reads those two numbers from the (cached)
  * data layer and never queries the guaranteed-empty native pool.
@@ -25,7 +25,7 @@ function fakeLiquidity(depth: bigint, threshold: bigint = THRESHOLD): LiquidityS
   };
 }
 
-describe('isFeeTokenEligible (BUS-38)', () => {
+describe('isFeeTokenEligible', () => {
   it('treats the native token as always eligible, regardless of depth', () => {
     expect(isFeeTokenEligible(BZE_BASE_DENOM, 0n, THRESHOLD)).toBe(true);
   });
@@ -45,7 +45,7 @@ describe('isFeeTokenEligible (BUS-38)', () => {
   });
 });
 
-describe('LiquidityFeeEligibilityService (BUS-38)', () => {
+describe('LiquidityFeeEligibilityService', () => {
   it('short-circuits the native token to eligible without any chain read', async () => {
     const liquidity = fakeLiquidity(0n);
     const service = new LiquidityFeeEligibilityService(liquidity);

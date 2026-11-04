@@ -1,7 +1,6 @@
 /**
- * The fee-token warning (BUS-39), shown on Home when the active token can't
- * currently be used to pay network fees because its liquidity is too low
- * (BUS-38).
+ * The fee-token warning, shown on Home when the active token can't
+ * currently be used to pay network fees because its liquidity is too low.
  *
  * Deliberately calm and unobtrusive: it uses `role="status"` (a polite live
  * region, not an alarm), reads as an FYI rather than an error, and is

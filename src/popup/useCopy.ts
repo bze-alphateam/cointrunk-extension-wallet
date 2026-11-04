@@ -1,5 +1,5 @@
 /**
- * Copy-to-clipboard with transient "Copied" feedback (BUS-20/BUS-21).
+ * Copy-to-clipboard with transient "Copied" feedback.
  *
  * Keeps the timer bookkeeping — and the unmount cleanup that avoids a state
  * update after the popup closes — in one place, so any screen that copies text

@@ -1,5 +1,5 @@
 /**
- * Receive screen (BUS-21): the account's full address plus a scannable QR code
+ * Receive screen: the account's full address plus a scannable QR code
  * that encodes exactly that address, with a copy button.
  *
  * The QR encodes the raw bech32 address (no `?amount=` URI): v1 receive is

@@ -1,11 +1,11 @@
 /**
- * Typed popup ↔ background message contract for the keyring (BUS-49).
+ * Typed popup ↔ background message contract for the keyring.
  *
  * The popup is untrusted UI: it sends a {@link KeyringRequest} and receives a
  * {@link KeyringResponse} carrying only non-secret data (lock status, account
  * metadata, fee quotes, tx hashes). Key material never crosses this boundary,
  * and neither does a raw signing capability: the only thing the popup can get
- * signed is a send the background builds itself (BUS-51).
+ * signed is a send the background builds itself.
  *
  * Both sides import these shared types. The background wires
  * {@link handleKeyringRequest} into `chrome.runtime.onMessage`; the popup calls
@@ -49,14 +49,14 @@ export interface KeyringServices {
   readonly balance: BalanceService;
   readonly transactions: TransactionService;
   readonly feeEligibility: FeeEligibilityService;
-  /** Token identity metadata for the switcher's list (BUS-37), via the cached data layer. */
+  /** Token identity metadata for the switcher's list, via the cached data layer. */
   readonly tokens: TokenIdentityReader;
-  /** A token's on-chain branding package for the popup skin (BUS-33), cached. */
+  /** A token's on-chain branding package for the popup skin, cached. */
   readonly branding: BrandingReader;
 }
 
 /**
- * A token the account holds, as the switcher lists it (BUS-37): the denom, its
+ * A token the account holds, as the switcher lists it: the denom, its
  * balance in base units, and its chain-sourced display identity (name, symbol,
  * logo, decimals). Composed in the background so the popup gets a ready-to-render
  * row without a chain client of its own.
@@ -68,8 +68,8 @@ export interface HeldToken {
 }
 
 /**
- * The active token's balance, with the identity the popup formats it with
- * (BUS-51): decimals and symbol come from the token's cached chain metadata,
+ * The active token's balance, with the identity the popup formats it with:
+ * decimals and symbol come from the token's cached chain metadata,
  * never from the native-token constants.
  */
 export interface ActiveBalance extends Balance {
@@ -129,7 +129,7 @@ export interface KeyringResponseData {
   quoteSend: SendQuote;
   /** The broadcast result (tx hash) of a send — see {@link TxResult}. */
   send: TxResult;
-  /** Re-checked fee-token eligibility for the active account (Epic 7 hook). */
+  /** Re-checked fee-token eligibility for the active account. */
   checkFeeEligibility: FeeTokenEligibility;
   getSettings: WalletSettings;
   setAutoLockMinutes: WalletSettings;
@@ -154,7 +154,7 @@ function assertNever(request: never): never {
 }
 
 /**
- * Resolve the sticky active-token denom (BUS-34): the stored choice if there is
+ * Resolve the sticky active-token denom: the stored choice if there is
  * one, else the first denom the account is seen holding — which is then
  * persisted so the choice sticks across reopens. Returns `null` when there is no
  * account or it holds nothing (the neutral default skin, no fee warning).
@@ -243,7 +243,7 @@ export async function handleKeyringRequest(
       case 'getBalance': {
         // The background owns whose balance this is: the popup asks "my balance"
         // and never gets to name an address, so it can't query an arbitrary one.
-        // It is the active token's balance (BUS-51), BZE when none is chosen
+        // It is the active token's balance, BZE when none is chosen
         // yet, returned with the identity the popup formats it with.
         const [account] = await keyring.getAccounts();
         if (!account) {
@@ -257,12 +257,12 @@ export async function handleKeyringRequest(
         return { ok: true, data: { ...held, identity } };
       }
       case 'getActiveToken': {
-        // Resolve the sticky active token (BUS-34): a chosen denom stays put with
+        // Resolve the sticky active token: a chosen denom stays put with
         // no chain read; otherwise the first held denom is adopted and persisted.
         return { ok: true, data: { denom: await resolveActiveDenom(keyring, settings, balance) } };
       }
       case 'setActiveToken': {
-        // A deliberate user switch (Epic 6): persist the chosen denom as the new
+        // A deliberate user switch: persist the chosen denom as the new
         // sticky active token, replacing whatever was chosen before. Only this
         // path and the first-received bootstrap in `getActiveToken` ever write
         // the active token, so the choice stays put until the next switch and
@@ -273,7 +273,7 @@ export async function handleKeyringRequest(
         return { ok: true, data: { denom: request.denom } };
       }
       case 'getHeldTokens': {
-        // The switcher's list (BUS-37): the account's held balances, each joined
+        // The switcher's list: the account's held balances, each joined
         // with its cached chain identity so the popup renders names/logos without
         // a chain client. Like getBalance, the background owns whose account this
         // is; no account (or an empty account) is just an empty list.
@@ -292,14 +292,14 @@ export async function handleKeyringRequest(
         return { ok: true, data: held };
       }
       case 'getBranding': {
-        // The active token's skin (BUS-33): public chain data, read through the
+        // The active token's skin: public chain data, read through the
         // cached layer, which already turns "no branding" and an outage with
         // nothing cached into null. The popup turns the package into a theme.
         assertValidActiveTokenDenom(request.denom);
         return { ok: true, data: await branding.getBranding(request.denom) };
       }
       case 'quoteSend': {
-        // The review step (BUS-51): simulate the send and pick its fee coin and
+        // The review step: simulate the send and pick its fee coin and
         // amount. Needs the unlocked signer's public key, so it fails while locked.
         const params = await resolveSend(keyring, settings, balance, request.request);
         return { ok: true, data: await transactions.quote(params) };
@@ -311,7 +311,7 @@ export async function handleKeyringRequest(
         return { ok: true, data: await transactions.send(params, request.request.fee) };
       }
       case 'checkFeeEligibility': {
-        // Re-check whether the *active token* can pay fees (BUS-38): resolve the
+        // Re-check whether the *active token* can pay fees: resolve the
         // sticky active denom here — the background owns which token that is, the
         // popup never names it — and feed it to the LP-depth gate. No active
         // token (no account, or holding nothing) is eligible: nothing to warn on.
@@ -330,7 +330,7 @@ export async function handleKeyringRequest(
         return { ok: true, data: updated };
       }
       case 'setTokenSwitchingEnabled': {
-        // Reveal or hide the switcher (BUS-36). Coerce to a real boolean and,
+        // Reveal or hide the switcher. Coerce to a real boolean and,
         // like the auto-lock setter, change only this flag so nothing else in
         // the settings blob (the sticky active token, the timeout) is disturbed.
         const current = await settings.load();

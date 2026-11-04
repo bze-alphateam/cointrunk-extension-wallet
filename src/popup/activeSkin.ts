@@ -1,12 +1,12 @@
 /**
- * Skinning the popup to the active token (BUS-34, BUS-33).
+ * Skinning the popup to the active token.
  *
  * The popup paints the neutral default skin immediately so there is never an
  * unstyled frame, then asks the background for the active token and re-skins to
  * it ({@link ../theme/active-skin.resolveActiveTheme}): the BZE skin for the
  * native token, the token's on-chain brand theme when it has a valid, readable
  * one, the default skin otherwise. Re-skinning is just another
- * {@link applyTheme} call, exactly as the theming layer (BUS-29) anticipated.
+ * {@link applyTheme} call, exactly as the theming layer anticipated.
  *
  * Applying a token is two-step: first the theme known without a chain read
  * (BZE, or the default skin), so a previous token's brand never lingers while
@@ -56,7 +56,7 @@ export function startSkin(): void {
 }
 
 /**
- * Re-skin to a known active-token denom (BUS-37). The token switcher calls this
+ * Re-skin to a known active-token denom. The token switcher calls this
  * the moment a switch is persisted, so the wallet repaints to the new token
  * without asking the background which token is active. Paints the
  * no-chain-read theme at once, then the resolved one; never rejects.

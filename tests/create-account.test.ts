@@ -1,5 +1,5 @@
 /**
- * End-to-end wallet creation (BUS-15): keyring.createAccount over the REAL
+ * End-to-end wallet creation: keyring.createAccount over the REAL
  * WebCrypto vault crypto, so this exercises generation → derivation →
  * encryption → persistence → unlock exactly as the background does.
  */
@@ -33,7 +33,7 @@ function newKeyring() {
   return { store, keyring: new Keyring(store, webCryptoVaultCrypto) };
 }
 
-describe('keyring.createAccount (BUS-15)', () => {
+describe('keyring.createAccount', () => {
   it('returns a 24-word mnemonic and leaves the wallet unlocked', async () => {
     const { keyring } = newKeyring();
     const created = await keyring.createAccount(PASSWORD);
@@ -131,7 +131,7 @@ describe('keyring.createAccount (BUS-15)', () => {
   });
 });
 
-describe('createAccount over the message API (BUS-15)', () => {
+describe('createAccount over the message API', () => {
   it('answers with the mnemonic for the one-time backup screen', async () => {
     const { keyring } = newKeyring();
     const response = await handleKeyringRequest(services(keyring), {

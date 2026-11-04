@@ -76,9 +76,8 @@ The public [privacy policy](privacy-policy.md) and the store answers in
 
 ## As-built facts
 
-Audited for BUS-41 against the wallet's security model, on the `main` branch as
-of the BUS-33 merge. Updated for BUS-51, which added local signing and
-broadcast.
+Audited against the wallet's security model on the `main` branch, and updated
+when local signing and broadcast were added.
 
 | Claim                              | As built                                                                                                                                                                                                                                                                                                                                 | Where                                                                                                            |
 | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
@@ -99,7 +98,7 @@ broadcast.
 
 ### Keep these statements true
 
-- **Transaction signing.** Local signing and broadcast shipped in BUS-51, so
+- **Transaction signing.** Local signing and broadcast have shipped, so
   "transactions are signed on your device" is true. It stays true only while
   the popup never gets a raw signing request and the seed never leaves the
   service worker. A new transaction type, sign mode or signing request (for

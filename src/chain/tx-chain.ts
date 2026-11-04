@@ -1,5 +1,5 @@
 /**
- * The chain reads and writes a send needs (BUS-51), over the node REST API.
+ * The chain reads and writes a send needs, over the node REST API.
  *
  * {@link TxChain} is the seam {@link ./tx.ChainTransactionService} depends on;
  * {@link RestTxChain} implements it on any {@link RestTransport} (in production

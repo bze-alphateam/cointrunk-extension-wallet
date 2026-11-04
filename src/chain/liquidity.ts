@@ -1,9 +1,9 @@
 /**
  * A token's BZE-side liquidity depth and the global governance threshold it is
- * weighed against (BUS-27).
+ * weighed against.
  *
  * BeeZee's liquidity lives in the **tradebin** module, which is a hybrid of an
- * order book and constant-product AMM pools. The signal BusyWallet cares about
+ * order book and constant-product AMM pools. The signal the wallet cares about
  * is the **AMM pool** only — order-book market depth is explicitly not used.
  * Each pool pairs
  * two denoms and stores their reserves; for a token/BZE pool the "BZE-side
@@ -30,12 +30,12 @@
  *       why the wallet reads it from chain rather than pinning a constant.
  *
  * A token with no pool is not an error: {@link TradebinLiquidityService.getNativeDepth}
- * returns `0n`, which is below any positive threshold — the ticket's "tokens
- * with no LP are treated as below threshold". This module only *reads* the two
+ * returns `0n`, which is below any positive threshold — tokens
+ * with no LP are treated as below threshold. This module only *reads* the two
  * numbers; how they combine is the consumer's call (fee-token eligibility,
  * {@link ./fees}), so no comparison operator is baked in here. Branding does
  * not use liquidity at all — it comes from the token's on-chain branding
- * package alone (BUS-32).
+ * package alone.
  */
 
 import { ChainClient, ChainQueryError } from './client';
@@ -68,7 +68,7 @@ export interface LiquidityService {
 
 /**
  * Reads both reserves of a token's BZE-paired pool, for the spot price a token
- * fee is converted at (BUS-51). `null` when the token has no pool with BZE.
+ * fee is converted at. `null` when the token has no pool with BZE.
  */
 export interface PoolReservesReader {
   getNativeReserves(denom: string): Promise<NativeReserves | null>;

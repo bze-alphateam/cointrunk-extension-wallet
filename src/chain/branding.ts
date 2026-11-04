@@ -1,6 +1,5 @@
 /**
- * A token's on-chain branding package, read from the tokenfactory module
- * (BUS-32).
+ * A token's on-chain branding package, read from the tokenfactory module.
  *
  * The denom admin sets it with `MsgSetDenomBranding`; the chain stores it as
  * `DenomBranding { font, light, dark }` (`proto/bze/tokenfactory/

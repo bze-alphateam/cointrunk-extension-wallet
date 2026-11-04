@@ -1,5 +1,5 @@
 /**
- * Applying themes (BUS-29): writing a theme's CSS variables onto a style
+ * Applying themes: writing a theme's CSS variables onto a style
  * target, mode selection, and unknown-id fallback. Runs without a DOM by
  * injecting a fake StyleTarget.
  */
@@ -15,7 +15,7 @@ function recordingTarget(): { target: StyleTarget; props: Map<string, string> } 
   return { target: { setProperty: (name, value) => props.set(name, value) }, props };
 }
 
-describe('applyCssVars (BUS-29)', () => {
+describe('applyCssVars', () => {
   it('writes every variable onto the target', () => {
     const { target, props } = recordingTarget();
     applyCssVars({ '--a': '1', '--b': '2' }, target);
@@ -24,7 +24,7 @@ describe('applyCssVars (BUS-29)', () => {
   });
 });
 
-describe('applyTheme (BUS-29)', () => {
+describe('applyTheme', () => {
   it('writes the full resolved variable set for the theme and mode', () => {
     const { target, props } = recordingTarget();
     applyTheme(DEFAULT_THEME_ID, 'dark', target);

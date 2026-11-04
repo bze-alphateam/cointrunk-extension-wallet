@@ -1,11 +1,11 @@
 /**
- * The theme to skin the wallet with for a given active token (BUS-34, BUS-33).
+ * The theme to skin the wallet with for a given active token.
  *
  *  - The native **BZE** token gets the hard-coded {@link BZE_THEME_ID BZE
  *    skin}: it is the native coin and always branded, with no on-chain package
  *    to depend on.
  *  - Any other token is branded exactly when its denom carries a valid on-chain
- *    branding package ({@link ./branding.decideBranding}, BUS-32) that passes
+ *    branding package ({@link ./branding.decideBranding}) that passes
  *    the readability guard; the package becomes its theme via
  *    {@link ./brand-theme.brandTheme}.
  *  - Everything else — no package, an unreadable one, a chain error, or no

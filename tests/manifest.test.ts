@@ -9,11 +9,11 @@ import permissionsDoc from '../docs/store/permissions.md?raw';
 // without documenting it is a store-review risk, so the suite fails until both
 // places agree.
 const DOCUMENTED_PERMISSIONS: string[] = [
-  // Auto-lock on inactivity (BUS-18).
+  // Auto-lock on inactivity.
   'alarms',
-  // Lock on OS screen lock / sleep (BUS-50).
+  // Lock on OS screen lock / sleep.
   'idle',
-  // Encrypted vault + settings in chrome.storage.local (BUS-17, BUS-18).
+  // Encrypted vault + settings in chrome.storage.local.
   'storage',
 ];
 
@@ -71,7 +71,7 @@ describe('MV3 manifest invariants', () => {
     }
   });
 
-  // BUS-43: chrome.storage was used for the vault but never declared, which
+  // Regression: chrome.storage was used for the vault but never declared, which
   // leaves `chrome.storage` undefined at runtime. Tie the manifest to the code
   // in both directions: every gated API used is requested, and every requested
   // permission is used (the minimal-set audit).
@@ -95,10 +95,10 @@ describe('MV3 manifest invariants', () => {
     expect(manifest).not.toHaveProperty('content_security_policy');
   });
 
-  // BUS-15 AC4 / Security Model: the mnemonic must never be exposed to the page
+  // Security model: the mnemonic must never be exposed to the page
   // context. With no content script and nothing web-accessible, there is no
   // channel from a web page into the extension at all — the guarantee holds by
-  // construction, not by discipline. The injected provider (a later epic) will
+  // construction, not by discipline. A future injected provider will
   // add a content script; when it does, it must keep the no-secrets rule and
   // this test must be revisited deliberately rather than silently deleted.
   it('exposes no page-context surface (no content scripts, nothing web-accessible)', () => {

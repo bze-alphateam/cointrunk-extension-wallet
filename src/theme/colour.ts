@@ -1,5 +1,5 @@
 /**
- * The colour maths the branding engine needs (BUS-33): mixing two `#RRGGBB`
+ * The colour maths the branding engine needs: mixing two `#RRGGBB`
  * colours and the WCAG 2.x contrast ratio between them.
  *
  * Everything works on the `#RRGGBB` form the chain enforces for branding

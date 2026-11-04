@@ -1,5 +1,5 @@
 /**
- * `getHeldTokens` routing (BUS-37): the background resolves the active account,
+ * `getHeldTokens` routing: the background resolves the active account,
  * lists its held balances, and joins each with its (cached) chain identity so the
  * switcher can render a name/logo per token. The popup never names an address.
  */
@@ -31,7 +31,7 @@ async function keyringWithAccount(): Promise<{ keyring: Keyring; address: string
   return { keyring, address: account!.address };
 }
 
-describe('getHeldTokens request (BUS-37)', () => {
+describe('getHeldTokens request', () => {
   it('lists held balances joined with their chain identities', async () => {
     const { keyring, address } = await keyringWithAccount();
     const balance = new FakeBalanceService({ denom: 'ubze', amount: '0' }, [

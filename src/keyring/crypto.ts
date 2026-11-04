@@ -1,5 +1,5 @@
 /**
- * The seam between the keyring (BUS-49) and the encryption routine (BUS-17).
+ * The seam between the keyring and the encryption routine.
  *
  * The keyring never does crypto itself — it holds an injected {@link VaultCrypto}
  * and calls {@link VaultCrypto.decrypt} to turn the persisted {@link EncryptedVault}
@@ -13,7 +13,7 @@ import type { DirectSignResponse } from '@cosmjs/proto-signing';
 import type { SignDoc } from 'cosmjs-types/cosmos/tx/v1beta1/tx';
 import type { EncryptedVault, VaultAccount } from './vault';
 
-/** A `SIGN_MODE_DIRECT` signing request: the sign doc to sign (BUS-51). */
+/** A `SIGN_MODE_DIRECT` signing request: the sign doc to sign. */
 export interface SignRequest {
   readonly signDoc: SignDoc;
 }
@@ -36,7 +36,7 @@ export interface Signer {
  * does crypto itself.
  *
  * `encrypt` turns a freshly generated or imported mnemonic into the persistable
- * blob (BUS-15 / BUS-16 account setup); `decrypt` turns a persisted vault back
+ * blob (account create / import); `decrypt` turns a persisted vault back
  * into an in-memory signer. Decryption proves the password via the AES-GCM
  * authentication tag and rejects on a wrong password or tampered blob — there is
  * no separate stored password hash.

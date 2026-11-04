@@ -1,11 +1,11 @@
 /**
- * Unlock screen (BUS-18): the password gate shown whenever a vault exists but no
+ * Unlock screen: the password gate shown whenever a vault exists but no
  * signer is held in memory — on first open, after an explicit lock, after
  * auto-lock, and after the service worker has been evicted.
  *
  * The password is held in component state only until submit and is cleared on a
- * failed attempt; it is never cached across popup sessions (Security Model:
- * "the popup never caches the password or secrets across sessions").
+ * failed attempt; it is never cached across popup sessions (the
+ * popup never caches the password or secrets across sessions).
  */
 
 import { useState, type FormEvent } from 'react';
