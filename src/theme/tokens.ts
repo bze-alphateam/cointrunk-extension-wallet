@@ -1,11 +1,10 @@
 /**
- * The design-token vocabulary the wallet's UI is themed with (BUS-29).
+ * The design-token vocabulary the wallet's UI is themed with.
  *
  * A **theme** is a named bundle of tokens split along two axes:
  *  - **colour**, which is mode-dependent — every theme carries a full `light`
  *    and `dark` {@link Palette}, because dark/light is holder-controlled and a
- *    brand supplies both (see Confluence "4. Token Eligibility & Branding
- *    Criteria" / "3. Technical Design").
+ *    brand supplies both.
  *  - **typography, spacing, radii**, which are mode-independent.
  *
  * Tokens reach the DOM as CSS custom properties under the `--ct-` prefix, which
@@ -17,7 +16,7 @@
  * fallbacks in `popup.css` cannot drift apart silently.
  *
  * Themes are either predefined (see {@link ../theme/themes}) or generated from
- * a token's on-chain branding package ({@link ../theme/brand-theme}, BUS-33),
+ * a token's on-chain branding package ({@link ../theme/brand-theme}),
  * which maps the package's four colours onto a full palette. The token set is a
  * superset of the brand package's fields (background / text / primary /
  * secondary) plus the supporting colours the wallet chrome needs (surface,

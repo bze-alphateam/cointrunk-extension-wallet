@@ -1,5 +1,5 @@
 /**
- * TtlCache (BUS-28): TTL freshness, single-flight refresh, and the
+ * TtlCache: TTL freshness, single-flight refresh, and the
  * stale-but-usable fallback when a refresh fails.
  */
 
@@ -12,7 +12,7 @@ function fakeClock(start = 1_000): { now: () => number; advance: (ms: number) =>
   return { now: () => t, advance: (ms) => (t += ms) };
 }
 
-describe('TtlCache (BUS-28)', () => {
+describe('TtlCache', () => {
   it('fetches once and serves the cached value while fresh', async () => {
     const clock = fakeClock();
     const loader = vi.fn(async (key: string) => `v:${key}`);

@@ -1,6 +1,6 @@
 /**
- * CachedChainData (BUS-28): the read facade that caches token metadata, LP
- * liquidity, the governance threshold and token branding (BUS-32) with
+ * CachedChainData: the read facade that caches token metadata, LP
+ * liquidity, the governance threshold and token branding with
  * per-kind TTLs, and invalidates per token on switch.
  */
 
@@ -43,7 +43,7 @@ function readers() {
   };
 }
 
-describe('CachedChainData (BUS-28)', () => {
+describe('CachedChainData', () => {
   it('caches metadata, liquidity, and threshold within their TTLs', async () => {
     const clock = fakeClock();
     const { spies, readers: r } = readers();
@@ -82,7 +82,7 @@ describe('CachedChainData (BUS-28)', () => {
     expect(spies.getThreshold).toHaveBeenCalledTimes(1); // threshold still fresh
   });
 
-  it('caches both pool reserves on the liquidity TTL, dropped on token switch (BUS-51)', async () => {
+  it('caches both pool reserves on the liquidity TTL, dropped on token switch', async () => {
     const clock = fakeClock();
     const { spies, readers: r } = readers();
     const data = new CachedChainData(r, { now: clock.now });

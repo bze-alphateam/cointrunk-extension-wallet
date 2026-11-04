@@ -1,12 +1,12 @@
 /**
- * Block-explorer links for the send success state (BUS-23).
+ * Block-explorer links for the send success state.
  */
 
 import { describe, expect, it } from 'vitest';
 import { BZE_EXPLORER_BASE_URL } from '../src/chain/constants';
 import { txExplorerUrl } from '../src/chain/explorer';
 
-describe('txExplorerUrl (BUS-23)', () => {
+describe('txExplorerUrl', () => {
   it('builds an explorer /tx/ link for the hash', () => {
     expect(txExplorerUrl('ABC123DEF')).toBe(`${BZE_EXPLORER_BASE_URL}/tx/ABC123DEF`);
   });

@@ -1,5 +1,5 @@
 /**
- * `checkFeeEligibility` routing (BUS-38): the popup asks to re-check whether the
+ * `checkFeeEligibility` routing: the popup asks to re-check whether the
  * active token can pay fees; the background resolves the sticky active-token
  * denom itself and delegates to the `FeeEligibilityService`. The popup never
  * names a denom or an address, matching the getBalance/send trust boundary.
@@ -48,7 +48,7 @@ function withFeeService(
   return services(keyring, settings, balance, undefined, fee);
 }
 
-describe('checkFeeEligibility request (BUS-38)', () => {
+describe('checkFeeEligibility request', () => {
   it('checks the sticky active token denom, not the account address', async () => {
     const keyring = await keyringWithAccount();
     const settings = new MemorySettingsStore({

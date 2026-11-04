@@ -1,5 +1,5 @@
 /**
- * Theme tokens & registry (BUS-29): the token→CSS-variable mapping and the
+ * Theme tokens & registry: the token→CSS-variable mapping and the
  * predefined theme set with lookup-by-id.
  */
 
@@ -36,7 +36,7 @@ const EXPECTED_VARS = [
   '--ct-radius-lg',
 ];
 
-describe('themeToCssVars (BUS-29)', () => {
+describe('themeToCssVars', () => {
   it('maps the dark palette to the --ct-* colour variables', () => {
     const vars = themeToCssVars(getTheme(DEFAULT_THEME_ID), 'dark');
     expect(vars['--ct-bg']).toBe('#0f172a');
@@ -65,7 +65,7 @@ describe('themeToCssVars (BUS-29)', () => {
   });
 });
 
-describe('theme registry (BUS-29)', () => {
+describe('theme registry', () => {
   it('includes the default theme and addresses it by the documented id', () => {
     expect(hasTheme(DEFAULT_THEME_ID)).toBe(true);
     expect(getTheme(DEFAULT_THEME_ID).id).toBe(DEFAULT_THEME_ID);

@@ -1,5 +1,5 @@
 /**
- * Local signing + broadcast of a send (BUS-51), through the public API only: a
+ * Local signing + broadcast of a send, through the public API only: a
  * real keyring unlocked from a fixed test mnemonic, the real
  * {@link ChainTransactionService} over {@link RestTxChain} and
  * {@link ChainClient}, and a scripted `fetch` in place of the network.
@@ -139,7 +139,7 @@ async function setUp(
 
 const FEE: TxFee = { amount: '1300', denom: 'ubze', gas: '130000' };
 
-describe('ChainTransactionService.quote (BUS-51)', () => {
+describe('ChainTransactionService.quote', () => {
   it('simulates, adds 30% gas and quotes the BZE fee', async () => {
     const { service, params, net } = await setUp();
 
@@ -174,7 +174,7 @@ describe('ChainTransactionService.quote (BUS-51)', () => {
   });
 });
 
-describe('ChainTransactionService.send (BUS-51)', () => {
+describe('ChainTransactionService.send', () => {
   it('signs a MsgSend locally (SIGN_MODE_DIRECT) and returns the real tx hash', async () => {
     const { service, params, net, keyring } = await setUp();
 

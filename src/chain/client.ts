@@ -1,10 +1,9 @@
 /**
- * HTTP client for the BeeZee chain's public node APIs, with endpoint fallback
- * (BUS-24).
+ * HTTP client for the BeeZee chain's public node APIs, with endpoint fallback.
  *
  * A node exposes two HTTP surfaces: the **REST** (LCD / gRPC-gateway) API for
- * module queries — balances, denom metadata — and tx simulate/broadcast
- * (BUS-51), and the **RPC** (CometBFT) API. One client serves both; it only
+ * module queries — balances, denom metadata — and tx simulate/broadcast,
+ * and the **RPC** (CometBFT) API. One client serves both; it only
  * keeps separate endpoint lists because a given host serves one surface or
  * the other.
  *
@@ -19,8 +18,8 @@
  * {@link ChainQueryError} carrying the HTTP status).
  *
  * No MV3 host permissions are needed: the public BZE nodes answer with
- * `Access-Control-Allow-Origin: *` (verified against rest.getbze.com,
- * BUS-24), and an endpoint that ever lacked CORS would just count as
+ * `Access-Control-Allow-Origin: *` (verified against rest.getbze.com),
+ * and an endpoint that ever lacked CORS would just count as
  * unavailable and fall through.
  */
 
@@ -91,7 +90,7 @@ export class ChainOutcomeUnknownError extends Error {
 }
 
 /**
- * The REST surface the transaction path needs (BUS-51), as an interface so the
+ * The REST surface the transaction path needs, as an interface so the
  * signer/broadcast code can be tested against a double. {@link ChainClient}
  * is the production implementation.
  */
@@ -146,7 +145,7 @@ export class ChainClient implements RestTransport {
   }
 
   /**
-   * POST a transaction broadcast to the REST API (BUS-51). Unlike every other
+   * POST a transaction broadcast to the REST API. Unlike every other
    * call, this one must never reach a second node once a first one may have
    * taken the transaction, so it only falls back when the endpoint was plainly
    * **unreachable**: a connection failure (fetch rejects before any answer) or

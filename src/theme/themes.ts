@@ -1,5 +1,5 @@
 /**
- * The predefined themes shipped with the wallet, and lookup by id (BUS-29).
+ * The predefined themes shipped with the wallet, and lookup by id.
  *
  * `default` is the neutral skin the wallet falls back to whenever a token has
  * no valid (or no readable) on-chain branding — it must always exist and is
@@ -8,7 +8,7 @@
  * hand-written: BZE is the native coin, with no on-chain branding package to
  * depend on. `midnight` is a further example of the token structure. Every
  * other token's brand theme is generated at runtime from its on-chain branding
- * package ({@link ./brand-theme.brandTheme}, BUS-33) rather than listed here.
+ * package ({@link ./brand-theme.brandTheme}) rather than listed here.
  *
  * Typography, spacing and radii are shared across these predefined themes and
  * match the values `popup.css` was built with, so selecting any of them changes

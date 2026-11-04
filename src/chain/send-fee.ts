@@ -1,5 +1,5 @@
 /**
- * Which coin pays a send's network fee, and how much (BUS-51). Pure: every input
+ * Which coin pays a send's network fee, and how much. Pure: every input
  * is passed in, so the whole rule is unit-testable with no chain.
  *
  * The chain's fee rules (bze `x/txfeecollector` ante, `check_fee_denom.go` /

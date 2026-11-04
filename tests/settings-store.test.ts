@@ -1,7 +1,7 @@
 /**
- * `ChromeSettingsStore` over a fake `chrome.storage.local` (BUS-18): the
+ * `ChromeSettingsStore` over a fake `chrome.storage.local`: the
  * settings blob is separate from the vault and carries only known fields. The
- * sticky active-token denom (BUS-34) and the token-switching toggle (BUS-36)
+ * sticky active-token denom and the token-switching toggle
  * ride alongside the auto-lock timeout, each field recovering independently from
  * corrupt storage.
  */
@@ -47,7 +47,7 @@ afterEach(() => {
   delete (globalThis as unknown as { chrome?: unknown }).chrome;
 });
 
-describe('ChromeSettingsStore (BUS-18)', () => {
+describe('ChromeSettingsStore', () => {
   it('returns the defaults when nothing has been stored', async () => {
     installFakeChromeStorage();
     expect(await new ChromeSettingsStore().load()).toEqual(settings());
@@ -97,7 +97,7 @@ describe('ChromeSettingsStore (BUS-18)', () => {
     expect(await new ChromeSettingsStore().load()).toEqual(settings());
   });
 
-  describe('sticky active-token denom (BUS-34)', () => {
+  describe('sticky active-token denom', () => {
     it('round-trips a saved active-token denom', async () => {
       installFakeChromeStorage();
       const store = new ChromeSettingsStore();
@@ -126,7 +126,7 @@ describe('ChromeSettingsStore (BUS-18)', () => {
     });
   });
 
-  describe('token-switching toggle (BUS-36)', () => {
+  describe('token-switching toggle', () => {
     it('defaults to off when nothing has been stored', async () => {
       installFakeChromeStorage();
       expect((await new ChromeSettingsStore().load()).tokenSwitchingEnabled).toBe(false);

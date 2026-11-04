@@ -1,5 +1,5 @@
 /**
- * The bundled brand-font files, and registering them on demand (BUS-33).
+ * The bundled brand-font files, and registering them on demand.
  *
  * Each of the six brand fonts ({@link ../theme/fonts}) ships as local woff2
  * files — latin subset, only the weights `popup.css` uses (400, 600, 700) —

@@ -1,5 +1,5 @@
 /**
- * Recipient-address validation for the send flow (BUS-22).
+ * Recipient-address validation for the send flow.
  *
  * The bech32 decode — prefix split and checksum — comes from `@cosmjs/encoding`
  * (the same library family the wallet already uses), never a hand-rolled

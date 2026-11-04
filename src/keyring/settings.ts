@@ -1,5 +1,5 @@
 /**
- * User-configurable wallet settings (BUS-18).
+ * User-configurable wallet settings.
  *
  * Nothing here is secret — these are plain preferences persisted next to the
  * vault in `chrome.storage.local`. They are deliberately kept in their own key
@@ -10,7 +10,7 @@
 export const SETTINGS_STORAGE_KEY = 'settings';
 
 /**
- * Ratified default inactivity timeout (Security Model: "Auto-lock default 15
+ * Ratified default inactivity timeout (security model: "Auto-lock default 15
  * min (configurable), via chrome.alarms").
  */
 export const DEFAULT_AUTO_LOCK_MINUTES = 15;
@@ -29,17 +29,17 @@ export interface WalletSettings {
   /** Inactivity timeout, in minutes, after which the wallet auto-locks. */
   readonly autoLockMinutes: number;
   /**
-   * The sticky active token's base denom, or `null` before one is chosen
-   * (BUS-34). The first token the account is seen holding is captured here and
+   * The sticky active token's base denom, or `null` before one is chosen.
+   * The first token the account is seen holding is captured here and
    * then stays put — the wallet reopens skinned to it, and it only changes when
-   * the user deliberately switches (Epic 6). `null` means "no token yet", which
+   * the user deliberately switches. `null` means "no token yet", which
    * the UI renders as the neutral default skin.
    */
   readonly activeTokenDenom: string | null;
   /**
-   * Whether the token switcher is revealed (BUS-36). Off by default: v1 opens as
+   * Whether the token switcher is revealed. Off by default: v1 opens as
    * a single-token wallet skinned to the active token, and only a user who opts
-   * in from Settings sees the network-style switcher (Epic 6). Off never blocks
+   * in from Settings sees the network-style switcher. Off never blocks
    * anything — the active token is still chosen and shown; it just can't be
    * changed by hand.
    */
@@ -85,7 +85,7 @@ export function normalizeActiveTokenDenom(candidate: unknown): string | null {
 }
 
 /**
- * Validate a denom the user is deliberately switching to (BUS-35). Unlike
+ * Validate a denom the user is deliberately switching to. Unlike
  * {@link normalizeActiveTokenDenom} — which quietly degrades a corrupt *stored*
  * value to the neutral default — an explicit "make this the active token" write
  * with no real denom is a caller bug, so it throws rather than silently doing

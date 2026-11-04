@@ -6,9 +6,9 @@ import {
   type EncryptedVault,
 } from '../src/keyring/vault';
 
-// These are the ratified security parameters (BUS-48, KDF revised to native
-// PBKDF2 after the Keplr/MetaMask prior-art spike). Downstream tickets (BUS-17
-// encrypt, BUS-49 keyring) build on exactly these numbers, so pin them and fail
+// These are the ratified security parameters (KDF revised to native
+// PBKDF2 after reviewing Keplr/MetaMask prior art). Downstream code (vault
+// encryption, the keyring) builds on exactly these numbers, so pin them and fail
 // loudly if anyone changes a value without a deliberate schema bump.
 describe('vault crypto parameters', () => {
   it('pins the PBKDF2 parameters (SHA-256, 600k iters, 16B salt, 32B key)', () => {
@@ -37,7 +37,7 @@ describe('vault crypto parameters', () => {
 describe('EncryptedVault schema', () => {
   it('describes a self-contained blob whose only secret field is the ciphertext', () => {
     // Compile-time + runtime check that the persisted shape matches the
-    // Security Model doc. A plaintext mnemonic must never appear here.
+    // vault schema. A plaintext mnemonic must never appear here.
     const sample: EncryptedVault = {
       version: VAULT_VERSION,
       kdf: { algo: 'pbkdf2', hash: 'SHA-256', iterations: 600000, salt: 'c2FsdA==' },

@@ -1,5 +1,5 @@
 /**
- * Fee coin + amount selection for a send (BUS-51): BZE when the BZE balance
+ * Fee coin + amount selection for a send: BZE when the BZE balance
  * covers it, else the active token when it is fee-eligible (converted at the
  * pool's spot price with a 10% margin), else blocked.
  */

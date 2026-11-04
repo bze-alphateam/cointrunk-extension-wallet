@@ -1,11 +1,11 @@
 /**
  * The wallet's main screen, shown while unlocked: the active token balance, the
  * account address, an explicit Lock button, and a way into settings. When the
- * user has enabled token switching (BUS-36), a switcher lists their tokens and
- * lets them change the active one, re-skinning the wallet (BUS-37).
+ * user has enabled token switching, a switcher lists their tokens and
+ * lets them change the active one, re-skinning the wallet.
  *
  * The balance is fetched on mount. Because the popup mounts fresh every time it
- * opens, that is exactly "refresh on popup open" (BUS-19) with no extra plumbing.
+ * opens, that is exactly "refresh on popup open" with no extra plumbing.
  */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -43,19 +43,19 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
   const [copied, setCopied] = useState(false);
   const copiedTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Token switcher (BUS-37), shown only when enabled in Settings (BUS-36).
+  // Token switcher, shown only when enabled in Settings.
   const [switchingEnabled, setSwitchingEnabled] = useState(false);
   const [tokens, setTokens] = useState<readonly HeldToken[]>([]);
   const [activeDenom, setActiveDenom] = useState<string | null>(null);
   const [switching, setSwitching] = useState(false);
 
-  // Fee-token warning (BUS-39): the reason the active token can't pay fees, or
+  // Fee-token warning: the reason the active token can't pay fees, or
   // null when it can (or the check hasn't run). Dismissible for the session.
   const [feeWarning, setFeeWarning] = useState<string | null>(null);
   const [feeWarningDismissed, setFeeWarningDismissed] = useState(false);
 
-  // The active token's balance, formatted with its own decimals and symbol
-  // (BUS-51). Loaded on open and again after a token switch.
+  // The active token's balance, formatted with its own decimals and symbol.
+  // Loaded on open and again after a token switch.
   const loadBalance = useCallback((isCancelled: () => boolean = () => false) => {
     request({ type: 'getBalance' })
       .then((loaded) => {
@@ -106,8 +106,8 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
   }, []);
 
   /**
-   * Re-check whether the active token can pay fees and refresh the warning
-   * (BUS-38/39). One of the two BUS-40 re-check points (the other is a failed tx,
+   * Re-check whether the active token can pay fees and refresh the warning.
+   * One of the two re-check points (the other is a failed tx,
    * on the Send screen); both funnel through the same `checkFeeEligibility`. A
    * failed check leaves the current warning untouched — never invent one from an
    * error — and never blocks anything.
@@ -121,15 +121,15 @@ export function Home({ state, onLocked, onSend, onReceive, onOpenSettings }: Hom
     }
   }
 
-  // Check on open (BUS-39), after the core balance load — a fee warning is an FYI
+  // Check on open, after the core balance load — a fee warning is an FYI
   // layered on top of a fully working wallet, never a gate in front of it.
   useEffect(() => {
     void refreshFeeWarning();
   }, []);
 
   /**
-   * Switch the active token (BUS-37): persist the choice, re-skin the wallet to
-   * it immediately, and re-check fee eligibility for the new token (BUS-40). A
+   * Switch the active token: persist the choice, re-skin the wallet to
+   * it immediately, and re-check fee eligibility for the new token. A
    * fresh check un-dismisses the warning, so switching to a low-liquidity token
    * re-surfaces it even if the previous one was dismissed.
    */

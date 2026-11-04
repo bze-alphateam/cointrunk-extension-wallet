@@ -2,9 +2,9 @@
  * BeeZee (BZE) chain constants.
  *
  * These pin how the wallet derives and renders BeeZee accounts, so every
- * key/account ticket (BUS-15, BUS-16, …) consumes them instead of re-deciding.
+ * key/account feature (create, import, …) consumes them instead of re-deciding.
  *
- * Confirmed against two independent sources (BUS-14):
+ * Confirmed against two independent sources:
  *  - Chain source `bze-alphateam/bze` — `app/app.go` sets
  *    `AccountAddressPrefix = "bze"`, and `app/config.go` seals the Cosmos SDK
  *    config WITHOUT calling `SetCoinType`, so the SDK default coin type (118)
@@ -34,7 +34,7 @@ export const BZE_CHAIN_ID = 'beezee-1';
  * stores and returns it. Balances and amounts on the wire are always integers of
  * this unit.
  *
- * Confirmed against three sources (BUS-19):
+ * Confirmed against three sources:
  *  - Chain genesis (`bze-alphateam/bze` `genesis.json`) — staking `bond_denom`,
  *    mint `mint_denom` and gentx amounts are all `ubze`.
  *  - Cosmos `u`-prefix micro convention: `u` + symbol.
@@ -58,13 +58,13 @@ export const BZE_DISPLAY_DECIMALS = 6;
  * Default BIP-44 HD derivation path for the first BeeZee account:
  * `m / 44' / 118' / 0' / 0 / 0`.
  *
- * Matches CosmJS's default account index/change; later tickets may vary the
+ * Matches CosmJS's default account index/change; later work may vary the
  * final segments for additional accounts.
  */
 export const BZE_HD_PATH = `m/${BIP44_PURPOSE}'/${BZE_COIN_TYPE}'/0'/0/0`;
 
 /**
- * Gas limit for a send when simulation fails (BUS-51). A single-message bank
+ * Gas limit for a send when simulation fails. A single-message bank
  * send comfortably fits under 200k gas on a Cosmos SDK chain; normally the
  * wallet simulates and uses `ceil(gasUsed × 1.3)` instead.
  */
@@ -74,6 +74,6 @@ export const DEFAULT_SEND_GAS = '200000';
  * Block-explorer base URL for BeeZee mainnet. The public BZE apps
  * (`bze-frontend-apps` `ui-kit`) link a transaction at `<base>/tx/<hash>`, with
  * the mainnet base `https://explorer.getbze.com/bze`. Kept here so the single
- * explorer the wallet points at is one documented constant (BUS-23).
+ * explorer the wallet points at is one documented constant.
  */
 export const BZE_EXPLORER_BASE_URL = 'https://explorer.getbze.com/bze';

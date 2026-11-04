@@ -1,5 +1,5 @@
 /**
- * Choosing the wallet's sticky active token (BUS-34).
+ * Choosing the wallet's sticky active token.
  *
  * The active token owns the wallet's skin (see the UX doc "Choosing the active
  * token"). It is picked with no user effort and then left alone:
@@ -7,7 +7,7 @@
  *  - **Sticky wins.** Once a denom has been chosen (persisted in
  *    {@link ../keyring/settings.WalletSettings.activeTokenDenom}), it stays the
  *    active token — it never changes on its own, even if that balance later
- *    drops to zero. Only a deliberate user switch (Epic 6) replaces it.
+ *    drops to zero. Only a deliberate user switch replaces it.
  *  - **Otherwise, first received.** With nothing chosen yet, the first token the
  *    account is seen holding becomes the active token.
  *  - **Otherwise, none.** A brand-new account holding nothing has no active

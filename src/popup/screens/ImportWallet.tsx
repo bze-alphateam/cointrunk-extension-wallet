@@ -1,5 +1,5 @@
 /**
- * Import-an-existing-wallet flow (BUS-16): paste a 12- or 24-word recovery
+ * Import-an-existing-wallet flow: paste a 12- or 24-word recovery
  * phrase, choose a password, done.
  *
  * The phrase is typed into a textarea that lives only in this component's state

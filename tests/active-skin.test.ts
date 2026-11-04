@@ -1,5 +1,5 @@
 /**
- * The active token → theme mapping (BUS-34, BUS-33): BZE gets the hard-coded
+ * The active token → theme mapping: BZE gets the hard-coded
  * BZE skin, a token with valid and readable on-chain branding gets its brand
  * theme, and everything else (and no token) gets the neutral default skin.
  */
@@ -19,7 +19,7 @@ const BRANDING: DenomBranding = {
   dark: { background: '#111827', text: '#F9FAFB', primary: '#FBBF24', secondary: '#9CA3AF' },
 };
 
-describe('activeThemeId (BUS-34)', () => {
+describe('activeThemeId', () => {
   it('skins the native BZE token with the BZE theme', () => {
     expect(activeThemeId(BZE_BASE_DENOM)).toBe(BZE_THEME_ID);
   });
@@ -39,7 +39,7 @@ describe('activeThemeId (BUS-34)', () => {
   });
 });
 
-describe('resolveActiveTheme (BUS-33)', () => {
+describe('resolveActiveTheme', () => {
   it('keeps the hard-coded BZE theme without reading branding', async () => {
     const branding = new FakeBrandingReader({ [BZE_BASE_DENOM]: BRANDING });
     expect(await resolveActiveTheme(BZE_BASE_DENOM, branding)).toBe(getTheme(BZE_THEME_ID));

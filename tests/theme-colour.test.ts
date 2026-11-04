@@ -1,12 +1,12 @@
 /**
- * Colour maths for the branding engine (BUS-33): sRGB mixing and the WCAG
+ * Colour maths for the branding engine: sRGB mixing and the WCAG
  * contrast ratio the readability guard is built on.
  */
 
 import { describe, expect, it } from 'vitest';
 import { contrastRatio, mixColours, readableOn, WCAG_AA_TEXT_CONTRAST } from '../src/theme/colour';
 
-describe('mixColours (BUS-33)', () => {
+describe('mixColours', () => {
   it('returns the endpoints at 0 and 1', () => {
     expect(mixColours('#FFFFFF', '#111827', 0)).toBe('#ffffff');
     expect(mixColours('#FFFFFF', '#111827', 1)).toBe('#111827');
@@ -25,7 +25,7 @@ describe('mixColours (BUS-33)', () => {
   });
 });
 
-describe('contrastRatio (BUS-33)', () => {
+describe('contrastRatio', () => {
   it('spans 1 (same colour) to 21 (black on white)', () => {
     expect(contrastRatio('#123456', '#123456')).toBe(1);
     expect(contrastRatio('#000000', '#FFFFFF')).toBeCloseTo(21, 10);
@@ -50,7 +50,7 @@ describe('contrastRatio (BUS-33)', () => {
   });
 });
 
-describe('readableOn (BUS-33)', () => {
+describe('readableOn', () => {
   it('picks black on light colours and white on dark ones', () => {
     expect(readableOn('#fbbf24')).toBe('#000000');
     expect(readableOn('#d97706')).toBe('#000000');

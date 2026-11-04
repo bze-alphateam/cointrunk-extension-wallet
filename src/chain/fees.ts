@@ -1,12 +1,12 @@
 /**
- * Fee-token eligibility for the active token (BUS-38, Epic 7).
+ * Fee-token eligibility for the active token.
  *
  * A BeeZee tx fee is normally paid in native BZE, but the tradebin fee-payer
  * lets a holder pay in their active token *if* that token is an accepted fee
  * token — which on chain means its BZE-paired AMM pool is deep enough. This
  * module answers "can the active token pay fees?" from the same two numbers the
- * data layer (Epic 4) already caches: the token's BZE-side LP depth and the
- * governance threshold. It replaces the BUS-23 placeholder with the real check.
+ * data layer already caches: the token's BZE-side LP depth and the
+ * governance threshold. It replaces the earlier placeholder with the real check.
  *
  * The gate mirrors the chain's own `HasDeepLiquidityWithNativeDenom` /
  * `CanSwapForNativeDenom` (`x/tradebin/keeper/service_denom.go`): a non-native
@@ -19,7 +19,7 @@
  *    depth gate. "No active token yet" (`null`) is likewise always eligible:
  *    there is nothing to warn about.
  *  - **Unrelated to branding.** Whether a token is branded depends only on its
- *    on-chain branding package (BUS-32), never on liquidity.
+ *    on-chain branding package, never on liquidity.
  */
 
 import { BZE_BASE_DENOM } from './constants';
@@ -65,7 +65,7 @@ export function isFeeTokenEligible(
 
 /**
  * The real fee-eligibility check, reading the active token's cached LP depth and
- * the cached threshold from the data layer (BUS-27/28) — no duplicate query
+ * the cached threshold from the data layer — no duplicate query
  * logic. Native/`null` short-circuits to eligible without a read, so the
  * guaranteed-empty native pool is never queried.
  */

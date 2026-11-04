@@ -1,5 +1,5 @@
 /**
- * `getActiveToken` routing (BUS-34): the background resolves the sticky active
+ * `getActiveToken` routing: the background resolves the sticky active
  * token, persisting the first-received choice and never re-querying once one is
  * set. The popup only ever learns the denom (its skin follows from it).
  */
@@ -32,7 +32,7 @@ async function keyringWithAccount(): Promise<{ keyring: Keyring; address: string
   return { keyring, address: account!.address };
 }
 
-describe('getActiveToken request (BUS-34)', () => {
+describe('getActiveToken request', () => {
   it('picks the first held token, persisting it as the sticky active token', async () => {
     const { keyring, address } = await keyringWithAccount();
     const settings = new MemorySettingsStore();

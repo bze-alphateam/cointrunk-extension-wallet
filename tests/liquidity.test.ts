@@ -1,5 +1,5 @@
 /**
- * TradebinLiquidityService (BUS-27): the BZE-side depth of a token/BZE AMM
+ * TradebinLiquidityService: the BZE-side depth of a token/BZE AMM
  * pool and the global governance threshold, read from the tradebin module.
  * Pool ids mirror the chain's CreatePoolId (sorted denoms joined with `_`); a
  * token with no pool degrades to 0n (below any threshold).
@@ -51,7 +51,7 @@ function serviceFor(
   return { service: new TradebinLiquidityService(client), urls };
 }
 
-describe('nativePoolId (BUS-27)', () => {
+describe('nativePoolId', () => {
   it('sorts the denom and native denom lexicographically, joined with "_"', () => {
     // 'f' < 'u': factory denom sorts before ubze.
     expect(nativePoolId(VDL_DENOM)).toBe(`${VDL_DENOM}_ubze`);
@@ -62,7 +62,7 @@ describe('nativePoolId (BUS-27)', () => {
   });
 });
 
-describe('TradebinLiquidityService.getNativeDepth (BUS-27)', () => {
+describe('TradebinLiquidityService.getNativeDepth', () => {
   it('queries the liquidity_pool route with the pool id URL-encoded', async () => {
     const { service, urls } = serviceFor(VDL_POOL);
 
@@ -133,7 +133,7 @@ describe('TradebinLiquidityService.getNativeDepth (BUS-27)', () => {
   });
 });
 
-describe('TradebinLiquidityService.getThreshold (BUS-27)', () => {
+describe('TradebinLiquidityService.getThreshold', () => {
   it('reads minNativeLiquidityForModuleSwap from the tradebin params', async () => {
     const { service, urls } = serviceFor(PARAMS);
     await expect(service.getThreshold()).resolves.toBe(100000000000n);
@@ -162,7 +162,7 @@ describe('TradebinLiquidityService.getThreshold (BUS-27)', () => {
   });
 });
 
-describe('TradebinLiquidityService.getNativeReserves (BUS-51)', () => {
+describe('TradebinLiquidityService.getNativeReserves', () => {
   it('returns both reserves, whichever side ubze is on', async () => {
     const quoteSide = serviceFor(VDL_POOL).service;
     await expect(quoteSide.getNativeReserves(VDL_DENOM)).resolves.toEqual({

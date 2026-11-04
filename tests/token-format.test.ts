@@ -1,5 +1,5 @@
 /**
- * `formatTokenAmount` (BUS-19): base-unit integers → display strings. This is the
+ * `formatTokenAmount`: base-unit integers → display strings. This is the
  * one place amounts get scaled and grouped, and it must stay BigInt-exact for
  * balances well past `Number.MAX_SAFE_INTEGER`.
  */
@@ -10,7 +10,7 @@ import { BZE_DISPLAY_DECIMALS } from '../src/chain/constants';
 
 const DECIMALS = BZE_DISPLAY_DECIMALS; // 6
 
-describe('formatTokenAmount (BUS-19)', () => {
+describe('formatTokenAmount', () => {
   it('renders whole amounts without a decimal point', () => {
     expect(formatTokenAmount('0', DECIMALS)).toBe('0');
     expect(formatTokenAmount('1000000', DECIMALS)).toBe('1');

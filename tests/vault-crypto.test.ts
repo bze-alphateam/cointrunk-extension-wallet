@@ -18,7 +18,7 @@ const ACCOUNTS: VaultAccount[] = [
   { address: 'bze1qexampleaddr', hdPath: "m/44'/118'/0'/0/0", label: 'Account 1' },
 ];
 
-describe('vault encryption at rest (BUS-17)', () => {
+describe('vault encryption at rest', () => {
   let vault: EncryptedVault;
 
   beforeAll(async () => {
@@ -34,7 +34,7 @@ describe('vault encryption at rest (BUS-17)', () => {
   });
 
   it('persists only ciphertext + non-secret metadata — never the plaintext', () => {
-    // Exactly the whitelisted persisted fields (matches the Security Model schema).
+    // Exactly the whitelisted persisted fields (matches the vault schema).
     expect(Object.keys(vault).sort()).toEqual([
       'accounts',
       'cipher',
@@ -81,7 +81,7 @@ describe('webCryptoVaultCrypto seam', () => {
     vault = await encryptVault(MNEMONIC, PASSWORD, ACCOUNTS);
   });
 
-  it('decrypt proves the password and returns the real HD signer (BUS-51)', async () => {
+  it('decrypt proves the password and returns the real HD signer', async () => {
     const signer = await webCryptoVaultCrypto.decrypt(vault, PASSWORD);
     const pubkey = await signer.getPublicKey();
     const { signed, signature } = await signer.sign(SIGN_REQUEST);
@@ -106,7 +106,7 @@ describe('webCryptoVaultCrypto seam', () => {
   });
 });
 
-describe('vault format guard (BUS-41)', () => {
+describe('vault format guard', () => {
   let vault: EncryptedVault;
 
   beforeAll(async () => {

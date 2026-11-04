@@ -1,5 +1,5 @@
 /**
- * The real signer behind an unlocked keyring (BUS-51): a CosmJS
+ * The real signer behind an unlocked keyring: a CosmJS
  * `DirectSecp256k1HdWallet` for the BeeZee account (prefix `bze`, path
  * {@link BZE_HD_PATH}), signing in `SIGN_MODE_DIRECT`.
  *

@@ -1,12 +1,12 @@
 /**
- * Auto-lock on inactivity (BUS-18).
+ * Auto-lock on inactivity.
  *
  * Why `chrome.alarms` and not `setTimeout`: an MV3 service worker is evicted
  * after ~30 s idle, and a `setTimeout` dies with it — so a timer-based
  * auto-lock would simply never fire in the one case it matters (the user walked
  * away and stopped interacting). Alarms are owned by the browser, survive
  * eviction, and wake the worker to run the handler. MetaMask moved to alarms in
- * MV3 for exactly this reason; see the Security Model's prior-art review.
+ * MV3 for exactly this reason; the same prior art informed this design.
  *
  * Eviction is itself a lock (the in-memory signer dies with the worker), so the
  * alarm is not what makes the wallet safe — it is what makes the wallet lock
@@ -89,8 +89,8 @@ export class AutoLock {
   }
 
   /**
-   * Lock immediately when the OS screen locks — an unambiguous "user has left"
-   * (BUS-50). This is a state machine over `chrome.idle` states, so it takes the
+   * Lock immediately when the OS screen locks — an unambiguous "user has left".
+   * This is a state machine over `chrome.idle` states, so it takes the
    * state directly and stays testable without a browser, like {@link onAlarm}.
    *
    * Only `'locked'` (OS screen lock / sleep) locks the wallet. `'idle'` is mere

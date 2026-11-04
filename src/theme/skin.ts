@@ -1,20 +1,19 @@
 /**
  * A **skin** — the resolved look of the active token — and the neutral default
- * skin the wallet falls back to (BUS-30).
+ * skin the wallet falls back to.
  *
- * The branding pipeline (see Confluence "3. Technical Design" → Branding
- * pipeline) resolves the active token to a skin and the popup renders it. A skin
+ * The branding pipeline resolves the active token to a skin and the popup renders it. A skin
  * is two things paired:
  *
  *  - a visual {@link Theme} — the colour palettes (light + dark), font, spacing
  *    and radii that {@link ../theme/apply.applyTheme} writes to the DOM, and
  *  - the token's {@link TokenIdentity} — its name, symbol and logo, which
- *    **always** come from chain metadata (BUS-26), never from a branding
+ *    **always** come from chain metadata, never from a branding
  *    package.
  *
  * The theme is the axis branding can change; the identity is not. A token is
  * branded exactly when its denom carries a valid on-chain branding package
- * ({@link ./branding.decideBranding}, BUS-32); without one, the fallback is the
+ * ({@link ./branding.decideBranding}); without one, the fallback is the
  * **default skin** built here: the neutral {@link
  * ../theme/themes.DEFAULT_THEME_ID default} theme over that same chain identity.
  * So switching a token in or out of branding only ever swaps the theme; the
@@ -22,8 +21,8 @@
  *
  * This module is the fallback end of that decision. It is pure — a theme lookup
  * plus an object — and holds no chain or DOM dependency (the identity is passed
- * in); fetching branding and deciding (BUS-32) and building and applying the
- * brand theme ({@link ./active-skin.resolveActiveTheme}, BUS-33) live
+ * in); fetching branding and deciding and building and applying the
+ * brand theme ({@link ./active-skin.resolveActiveTheme}) live
  * elsewhere.
  */
 
@@ -46,7 +45,7 @@ export interface Skin {
   readonly identity: TokenIdentity;
   /**
    * `false` for the neutral default skin; `true` once a token's on-chain
-   * branding resolves it to its brand theme (BUS-32/33). Lets the UI and tests tell the
+   * branding resolves it to its brand theme. Lets the UI and tests tell the
    * fallback apart from a real brand without inspecting the theme id.
    */
   readonly branded: boolean;
@@ -58,7 +57,7 @@ export interface Skin {
  * without valid on-chain branding, and it renders for *any*
  * token — the identity is used as-is, so a token with no on-chain logo/name
  * still gets a complete, styled skin (its {@link TokenIdentity} already carries
- * per-field fallbacks: logo `null`, name/symbol from the denom — BUS-26).
+ * per-field fallbacks: logo `null`, name/symbol from the denom).
  */
 export function defaultSkin(identity: TokenIdentity): Skin {
   return {

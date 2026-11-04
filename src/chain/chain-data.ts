@@ -1,9 +1,9 @@
 /**
- * The cached read layer the popup talks to for chain data (BUS-28).
+ * The cached read layer the popup talks to for chain data.
  *
  * {@link CachedChainData} composes the individual chain reads — token identity
- * metadata (BUS-26), a token's BZE-side LP depth and the governance threshold
- * (BUS-27), and a token's on-chain branding (BUS-32) — behind one facade, each wrapped in a {@link TtlCache}. It exposes
+ * metadata, a token's BZE-side LP depth and the governance threshold,
+ * and a token's on-chain branding — behind one facade, each wrapped in a {@link TtlCache}. It exposes
  * the same read methods as the underlying services, so callers get caching for
  * free without knowing it is there.
  *
@@ -50,7 +50,7 @@ export interface ChainDataReaders {
   readonly metadata: TokenIdentityReader;
   readonly liquidity: LiquidityService;
   readonly branding: BrandingReader;
-  /** Both pool reserves, for a token fee's spot conversion (BUS-51). */
+  /** Both pool reserves, for a token fee's spot conversion. */
   readonly reserves: PoolReservesReader;
 }
 

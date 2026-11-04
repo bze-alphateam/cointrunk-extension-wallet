@@ -1,5 +1,5 @@
 /**
- * A token's on-chain branding package → a full wallet {@link Theme} (BUS-33).
+ * A token's on-chain branding package → a full wallet {@link Theme}.
  *
  * The chain stores four colours per mode (background, text, primary,
  * secondary) and a font slug ({@link ../chain/branding.DenomBranding}). The

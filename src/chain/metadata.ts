@@ -1,6 +1,6 @@
 /**
  * Token identity metadata — name, symbol, logo, decimals — read from the
- * chain (BUS-26).
+ * chain.
  *
  * BZE's Token Factory does not store identity itself: `MsgSetDenomMetadata`
  * writes straight into the **bank module's denom metadata** (see
@@ -95,7 +95,7 @@ interface DenomMetadata {
 }
 
 function defaultIdentity(denom: string): TokenIdentity {
-  // The native token's identity is pinned in constants (BUS-14/19); the chain
+  // The native token's identity is pinned in constants; the chain
   // itself has no metadata for ubze, and 0 decimals would misrender BZE.
   if (denom === BZE_BASE_DENOM) {
     return {

@@ -1,10 +1,9 @@
 /**
- * Bank module queries: the account's balances, straight from the chain
- * (BUS-25).
+ * Bank module queries: the account's balances, straight from the chain.
  *
- * This is the first real replacement of an Epic 4 placeholder:
+ * This is the first real replacement of a placeholder:
  * {@link BankBalanceService} implements the {@link BalanceService} seam the
- * popup already consumes (BUS-19), so wiring it into the background is the
+ * popup already consumes, so wiring it into the background is the
  * only UI-facing change — the message routing, loading and error states all
  * stay as they are.
  *
@@ -53,8 +52,8 @@ export class BankBalanceService implements BalanceService {
   }
 
   /**
-   * One denom's balance — the active token's, for the home and send screens
-   * (BUS-51). Missing from the result set (empty account, or none of this
+   * One denom's balance — the active token's, for the home and send screens.
+   * Missing from the result set (empty account, or none of this
    * token) is a plain zero balance, not an error.
    */
   async getBalance(address: string, denom: string): Promise<Balance> {

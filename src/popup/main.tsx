@@ -7,7 +7,7 @@ import './popup.css';
 // Paint the default skin before first render (no unstyled frame) and follow the
 // OS light↔dark switch, then re-skin to the active token once the background
 // resolves it: the BZE skin for BZE, the token's on-chain brand theme when it
-// has a readable one (BUS-33), the default skin otherwise (BUS-34).
+// has a readable one, the default skin otherwise.
 startSkin();
 void resolveActiveSkin();
 

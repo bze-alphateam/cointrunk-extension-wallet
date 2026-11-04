@@ -1,12 +1,12 @@
 /**
- * BIP39 mnemonic generation and BeeZee account derivation (BUS-15).
+ * BIP39 mnemonic generation and BeeZee account derivation.
  *
  * This is the only place the wallet turns entropy into a mnemonic, and a
  * mnemonic into an address. Everything here runs in the background service
  * worker; nothing in this module logs or persists key material — it hands the
  * mnemonic straight back to its caller (the keyring).
  *
- * Library posture (Security Model, "Library posture"): BIP39 and secp256k1/HD
+ * Library posture (security model, "library posture"): BIP39 and secp256k1/HD
  * derivation come from CosmJS (`@cosmjs/crypto` wraps `@scure/bip39`;
  * `DirectSecp256k1HdWallet` wraps `@noble/curves`) — pure JS, bundled in the
  * extension, no WASM and no remotely-hosted code. We deliberately do not
@@ -20,7 +20,7 @@ import type { VaultAccount } from './vault';
 
 /**
  * Entropy for a 24-word mnemonic. BIP39 maps 32 bytes (256 bits) → 24 words,
- * which is the ratified default (Security Model: "24-word mnemonic default").
+ * which is the ratified default (security model: "24-word mnemonic default").
  */
 export const MNEMONIC_ENTROPY_BYTES = 32;
 
@@ -28,7 +28,7 @@ export const MNEMONIC_ENTROPY_BYTES = 32;
 export const DEFAULT_MNEMONIC_WORDS = 24;
 
 /**
- * Word counts accepted on import (BUS-16, Security Model: "12 or 24 accepted on
+ * Word counts accepted on import (security model: "12 or 24 accepted on
  * import"). BIP39 also defines 15/18/21, but the wallet deliberately narrows to
  * the two counts users actually have, so a 15-word paste gets a clear "must be
  * 12 or 24" rather than silently importing the wrong wallet.
@@ -56,7 +56,7 @@ export function generateMnemonic(): string {
 }
 
 /**
- * Clean up a pasted recovery phrase (BUS-16): trim, collapse runs of whitespace
+ * Clean up a pasted recovery phrase: trim, collapse runs of whitespace
  * and newlines into single spaces, and lowercase — the BIP39 English word list
  * is lowercase, so a phrase copied out of a document with capitals or line
  * breaks validates the same as a cleanly typed one.
@@ -68,7 +68,7 @@ export function normalizeMnemonic(input: string): string {
 
 /**
  * Validate a user-supplied mnemonic, throwing a specific, actionable error on
- * failure (BUS-16 AC: "rejected with a clear, specific error").
+ * failure ("rejected with a clear, specific error").
  *
  * Expects an already-{@link normalizeMnemonic}d string. The three failure modes
  * are reported separately — wrong word count, a word outside the BIP39 list, or
@@ -102,7 +102,7 @@ export function assertValidMnemonic(mnemonic: string): void {
 
 /**
  * Derive the BeeZee account for a mnemonic using the confirmed bech32 prefix and
- * BIP-44 HD path (BUS-14), via CosmJS `DirectSecp256k1HdWallet`.
+ * BIP-44 HD path, via CosmJS `DirectSecp256k1HdWallet`.
  *
  * Returns only the non-secret {@link VaultAccount} metadata — address, HD path,
  * label. The wallet object (which holds the seed) is local to this call and is

@@ -1,6 +1,6 @@
 /**
  * The keyring: the background service worker's single source of truth for wallet
- * state and the sole holder of decrypted key material (BUS-49).
+ * state and the sole holder of decrypted key material.
  *
  * State model — the status is DERIVED, never separately persisted:
  *  - `uninitialized` — no vault in storage (wallet not set up yet).
@@ -11,7 +11,7 @@
  * lifecycle handling is automatic: when the service worker is torn down the
  * signer (and all secret material) is gone, and a freshly respawned keyring
  * reports `locked` again from the persisted, non-secret metadata. No secret ever
- * survives in storage. See the vault schema and the Security Model doc.
+ * survives in storage. See the vault schema in {@link ./vault}.
  */
 
 import { assertValidMnemonic, deriveAccount, generateMnemonic, normalizeMnemonic } from './account';
@@ -32,7 +32,7 @@ export interface KeyringState {
 }
 
 /**
- * Result of creating a brand-new wallet (BUS-15).
+ * Result of creating a brand-new wallet.
  *
  * This is the ONE response in the whole message API that carries secret
  * material: the freshly generated mnemonic, so the popup can render the
@@ -41,9 +41,8 @@ export interface KeyringState {
  *  - there is no request that re-reads the mnemonic afterwards, so a popup that
  *    discards it cannot get it back;
  *  - it goes only to the extension's own popup — never to a content script or
- *    page, which is the boundary the Security Model's threat model draws.
- * A wallet cannot be non-custodial without showing the user their phrase once;
- * see the security note in the PR/ticket.
+ *    page, which is the boundary the wallet's threat model draws.
+ * A wallet cannot be non-custodial without showing the user their phrase once.
  */
 export interface CreatedAccount {
   /** The new mnemonic, for one-time display on the backup screen. */
@@ -81,7 +80,7 @@ export class Keyring implements Signer {
   }
 
   /**
-   * Create a brand-new wallet (BUS-15): generate a 24-word BIP39 mnemonic,
+   * Create a brand-new wallet: generate a 24-word BIP39 mnemonic,
    * derive the BeeZee account from it, encrypt the mnemonic under `password`,
    * and persist only the resulting blob. The keyring is left unlocked.
    *
@@ -101,7 +100,7 @@ export class Keyring implements Signer {
   }
 
   /**
-   * Import an existing wallet from a user-supplied mnemonic (BUS-16): normalise
+   * Import an existing wallet from a user-supplied mnemonic: normalise
    * and validate it, derive the BeeZee account, encrypt under `password`, and
    * persist. The keyring is left unlocked, exactly as after `createAccount`.
    *
@@ -182,7 +181,7 @@ export class Keyring implements Signer {
   }
 
   /**
-   * Sign a sign doc (BUS-51). Gated on unlock: throws while locked so no
+   * Sign a sign doc. Gated on unlock: throws while locked so no
    * operation needing key material can proceed. The keyring is the only
    * {@link Signer} the transaction service sees, so this gate covers every send.
    */

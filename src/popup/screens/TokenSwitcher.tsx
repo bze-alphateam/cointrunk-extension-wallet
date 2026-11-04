@@ -1,6 +1,6 @@
 /**
- * The network-style token switcher (BUS-37), shown on Home only when the user
- * has enabled switching in Settings (BUS-36).
+ * The network-style token switcher, shown on Home only when the user
+ * has enabled switching in Settings.
  *
  * Presentational on purpose: it lists the account's held tokens and reports the
  * one the user picks via {@link TokenSwitcherProps.onSwitch}. The parent (Home)

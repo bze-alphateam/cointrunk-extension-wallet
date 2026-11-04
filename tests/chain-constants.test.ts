@@ -8,7 +8,7 @@ import {
 } from '../src/chain/constants';
 
 // These values are confirmed against the BeeZee chain source and the Cosmos
-// chain-registry (BUS-14). A change here would silently break address
+// chain-registry. A change here would silently break address
 // derivation, so pin them and fail loudly if anyone edits the constants.
 describe('BeeZee chain constants', () => {
   it('uses the "bze" bech32 prefix', () => {

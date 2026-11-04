@@ -1,6 +1,6 @@
 /**
- * First-run entry point: the choice between creating a new wallet (BUS-15) and
- * importing an existing one (BUS-16).
+ * First-run entry point: the choice between creating a new wallet and
+ * importing an existing one.
  */
 
 interface WelcomeProps {

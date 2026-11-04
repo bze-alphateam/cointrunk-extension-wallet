@@ -1,5 +1,5 @@
 /**
- * Recipient-address validation (BUS-22): bech32 + BeeZee prefix + account
+ * Recipient-address validation: bech32 + BeeZee prefix + account
  * length, with a distinct, user-readable error for each failure mode.
  */
 
@@ -11,7 +11,7 @@ const BZE = 'bze1qv9pzxqlyckngw6zf9g9whn9d3eh4qvgvn4pp9';
 const COSMOS = 'cosmos1qv9pzxqlyckngw6zf9g9whn9d3eh4qvg3he2nj';
 const SHORT = 'bze1qyqszqgpqyqszqgpu9sva2'; // valid bech32, 10-byte payload
 
-describe('validateRecipientAddress (BUS-22)', () => {
+describe('validateRecipientAddress', () => {
   it('accepts a well-formed bze address and returns it trimmed', () => {
     expect(validateRecipientAddress(`  ${BZE}  `)).toBe(BZE);
   });
@@ -34,7 +34,7 @@ describe('validateRecipientAddress (BUS-22)', () => {
   });
 });
 
-describe('isValidRecipientAddress (BUS-22)', () => {
+describe('isValidRecipientAddress', () => {
   it('mirrors the thrower without throwing', () => {
     expect(isValidRecipientAddress(BZE)).toBe(true);
     expect(isValidRecipientAddress(COSMOS)).toBe(false);

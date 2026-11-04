@@ -1,5 +1,5 @@
 /**
- * Brand package → wallet theme (BUS-33): the derived colours, the fixed danger
+ * Brand package → wallet theme: the derived colours, the fixed danger
  * colour, the bundled-font mapping and the WCAG AA readability guard.
  */
 
@@ -27,7 +27,7 @@ function built(branding: DenomBranding = BRANDING) {
   return theme!;
 }
 
-describe('brandTheme (BUS-33)', () => {
+describe('brandTheme', () => {
   it('uses the four brand colours as given, per mode', () => {
     const theme = built();
     for (const mode of ['light', 'dark'] as const) {

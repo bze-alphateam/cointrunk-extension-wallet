@@ -1,5 +1,5 @@
 /**
- * On-chain token branding (BUS-32): TokenfactoryBrandingService reads and
+ * On-chain token branding: TokenfactoryBrandingService reads and
  * validates a denom's branding package, and decideBranding turns it into
  * branded/default. Any valid package means branded — liquidity is never asked.
  */
@@ -34,7 +34,7 @@ function serviceFor(
   return { service: new TokenfactoryBrandingService(client), urls };
 }
 
-describe('TokenfactoryBrandingService.getBranding (BUS-32)', () => {
+describe('TokenfactoryBrandingService.getBranding', () => {
   it('queries denom_branding with the denom URL-encoded in the query string', async () => {
     const { service, urls } = serviceFor({ branding: BRANDING });
 
@@ -106,7 +106,7 @@ describe('TokenfactoryBrandingService.getBranding (BUS-32)', () => {
   });
 });
 
-describe('decideBranding (BUS-32)', () => {
+describe('decideBranding', () => {
   it('is branded, carrying the package, when the token has valid branding', () => {
     expect(decideBranding(BRANDING)).toEqual({ kind: 'branded', branding: BRANDING });
   });

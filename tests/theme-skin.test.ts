@@ -1,5 +1,5 @@
 /**
- * The default (neutral) skin (BUS-30): pairing the neutral `default` theme with
+ * The default (neutral) skin: pairing the neutral `default` theme with
  * a token's chain-sourced identity, as the fallback the branding gate lands on.
  */
 
@@ -19,7 +19,7 @@ const VDL: TokenIdentity = {
   logoUri: 'https://cdn.example/vdl.png',
 };
 
-/** The native token — pinned identity, no logo on chain (BUS-26 defaults). */
+/** The native token — pinned identity, no logo on chain (identity defaults). */
 const BZE: TokenIdentity = {
   denom: 'ubze',
   name: 'BZE',
@@ -43,7 +43,7 @@ function recordingTarget(): { target: StyleTarget; props: Map<string, string> } 
   return { target: { setProperty: (name, value) => props.set(name, value) }, props };
 }
 
-describe('defaultSkin (BUS-30)', () => {
+describe('defaultSkin', () => {
   it('pairs the neutral default theme with the token identity', () => {
     const skin = defaultSkin(VDL);
     expect(skin.theme).toEqual(getTheme(DEFAULT_THEME_ID));
@@ -61,7 +61,7 @@ describe('defaultSkin (BUS-30)', () => {
 
   it('still renders a complete skin when the token has no on-chain logo/name', () => {
     const skin = defaultSkin(BARE);
-    // Identity degrades per-field (BUS-26), and the skin uses it as-is.
+    // Identity degrades per-field, and the skin uses it as-is.
     expect(skin.identity.logoUri).toBeNull();
     expect(skin.identity.name).toBe('umeme');
     // The theme is nonetheless complete — every stylesheet variable is set.
@@ -80,7 +80,7 @@ describe('defaultSkin (BUS-30)', () => {
   });
 
   it('is marked as the unbranded fallback for the branding gate', () => {
-    // The gate (BUS-32) lands here when a token is not branded; `branded: false`
+    // The gate lands here when a token is not branded; `branded: false`
     // lets callers tell this fallback apart from a resolved brand skin.
     expect(defaultSkin(BZE).branded).toBe(false);
     expect(defaultSkin(BZE).theme.id).toBe(DEFAULT_THEME_ID);

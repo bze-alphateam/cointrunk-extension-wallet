@@ -17,7 +17,7 @@ import { BZE_BECH32_PREFIX, BZE_HD_PATH } from '../src/chain/constants';
 const ZERO_ENTROPY_MNEMONIC =
   'abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon abandon art';
 
-describe('generateMnemonic (BUS-15)', () => {
+describe('generateMnemonic', () => {
   it('produces a 24-word mnemonic', () => {
     expect(generateMnemonic().split(' ')).toHaveLength(DEFAULT_MNEMONIC_WORDS);
   });
@@ -39,7 +39,7 @@ describe('generateMnemonic (BUS-15)', () => {
   });
 });
 
-describe('deriveAccount (BUS-15)', () => {
+describe('deriveAccount', () => {
   it('derives a bech32 BeeZee address on the confirmed prefix and HD path', async () => {
     const account = await deriveAccount(ZERO_ENTROPY_MNEMONIC);
     expect(account.address.startsWith(`${BZE_BECH32_PREFIX}1`)).toBe(true);

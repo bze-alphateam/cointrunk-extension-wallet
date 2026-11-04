@@ -1,7 +1,7 @@
 /*
  * Static token fallbacks for the pre-JS paint: the `default` theme, mirrored
  * from src/theme/themes.ts. main.tsx re-applies the selected theme/mode at
- * runtime by overriding these same --ct-* variables (BUS-29). Keep the values
+ * runtime by overriding these same --ct-* variables. Keep the values
  * here in sync with the DEFAULT_THEME palette.
  */
 :root {
@@ -401,7 +401,7 @@ body {
   text-align: right;
 }
 
-/* --- token switcher (BUS-37) ----------------------------------------------- */
+/* --- token switcher ----------------------------------------------- */
 
 .switcher {
   display: flex;
@@ -469,7 +469,7 @@ body {
   color: var(--ct-muted);
 }
 
-/* --- fee-token warning (BUS-39) -------------------------------------------- */
+/* --- fee-token warning -------------------------------------------- */
 
 /* Calm, not alarming: a soft amber accent on the neutral surface, muted text —
    an FYI, not the danger-red used for errors. */

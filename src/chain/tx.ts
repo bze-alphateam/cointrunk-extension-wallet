@@ -1,6 +1,5 @@
 /**
- * The send transaction: quote its fee, sign it locally and broadcast it
- * (BUS-22 seam, filled by BUS-51).
+ * The send transaction: quote its fee, sign it locally and broadcast it.
  *
  * A send is one `MsgSend` of the active token, empty memo, signed in
  * `SIGN_MODE_DIRECT` by the keyring's in-memory signer. The flow:
@@ -71,7 +70,7 @@ export interface TxFee {
 
 /** The outcome of a successful broadcast. */
 export interface TxResult {
-  /** The transaction hash, for the success confirmation and explorer link (BUS-23). */
+  /** The transaction hash, for the success confirmation and explorer link. */
   readonly hash: string;
 }
 
