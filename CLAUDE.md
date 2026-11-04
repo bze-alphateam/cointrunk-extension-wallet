@@ -4,8 +4,9 @@ Browser-extension wallet for the BeeZee (BZE) network. Public brand **CoinTrunk*
 (cointrunk.io); internal codename **BusyWallet**.
 
 - Jira project: `BUS` (BusyWallet) · GitHub: `bze-alphateam/cointrunk-extension-wallet`
-- Lives under `bze-ecosystem/` because it targets the BZE chain, though it tracks
-  its own Jira project (`BUS`) and Confluence space (`BusyWallet`).
+- Lives under `cointrunk-ecosystem/` with the other CoinTrunk apps (moved from
+  `bze-ecosystem/` on 2026-11-04). It targets the BZE chain and tracks its own Jira
+  project (`BUS`) and Confluence space (`BusyWallet`).
 
 ## Stack
 
