@@ -1,38 +1,38 @@
 # CoinTrunk Wallet — MV3 browser extension
 
-Browser-extension wallet for the BeeZee (BZE) network. Public brand **CoinTrunk**
-(cointrunk.io); internal codename **BusyWallet**.
-
-- Jira project: `BUS` (BusyWallet) · GitHub: `bze-alphateam/cointrunk-extension-wallet`
-- Lives under `cointrunk-ecosystem/` with the other CoinTrunk apps (moved from
-  `bze-ecosystem/` on 2026-11-04). It targets the BZE chain and tracks its own Jira
-  project (`BUS`) and Confluence space (`BusyWallet`).
+Browser-extension wallet for the BeeZee (BZE) network, published under the **CoinTrunk**
+brand (cointrunk.io). Talks to BZE nodes over their public REST and RPC endpoints.
 
 ## Stack
 
-- **TypeScript** (strict), **pnpm** (version pinned via `packageManager` in `package.json`), Node >= 22 (`.nvmrc`).
-- Manifest V3 extension: background service worker + popup UI. Bundler and UI
-  framework are introduced in later Epic 1 tickets (BUS-11 / BUS-13).
+- **TypeScript** (strict), **pnpm** (version pinned via `packageManager` in `package.json`), Node per `.nvmrc`.
+- Manifest V3 extension (`manifest.config.ts`) built with Vite + `@crxjs/vite-plugin`
+  for Chrome and Firefox: background service worker + React popup.
+- Chain access through `@cosmjs/{crypto,encoding,proto-signing}` and `cosmjs-types`.
+- Tests: Vitest. Lint: ESLint (typescript-eslint). Format: Prettier.
 
 ## Layout
 
 ```
-src/            # extension source (entry points added ticket by ticket)
-tsconfig.json   # strict TS, noEmit (bundler owns emit)
+src/background/  # service worker: wires the keyring, chain services and signing
+src/chain/       # chain clients, balances, token metadata, cached read layer
+src/keyring/     # HD keys, encryption at rest, auto-lock, settings
+src/popup/       # React popup UI and its token-branded skin
+tests/           # Vitest unit tests
+scripts/         # reproducible packaging scripts
+docs/store/      # store listing, permissions, privacy and security docs
 ```
 
 ## Commands
 
 - `pnpm install` — install deps (run `corepack enable` once first).
+- `pnpm build` — Chrome + Firefox builds (`build:chrome`, `build:firefox`).
 - `pnpm typecheck` — type-check with `tsc --noEmit`.
+- `pnpm lint` and `pnpm format:check` — CI runs both; Prettier prefers double quotes.
 - `pnpm test` — run unit tests (Vitest, `tests/*.test.ts`).
 - `pnpm package` / `pnpm package:source` — reproducible store zip / source zip
   into `release/` (see `BUILD.md`; the build must stay reproducible, CI checks it).
 
-**Never run the extension on this VM** (VM-wide rule): build/typecheck/lint/test
-only. Stefan loads the unpacked build in Chrome himself.
-
 ## Conventions
 
-- One Jira ticket = one branch = one draft PR into the parent branch (see the
-  `git-workflow` skill). Keep MV3 permissions minimal; justify each one in `docs/store/permissions.md`.
+- Keep MV3 permissions minimal; justify each one in `docs/store/permissions.md`.
